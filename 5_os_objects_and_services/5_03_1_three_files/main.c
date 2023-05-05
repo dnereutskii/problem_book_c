@@ -1,5 +1,8 @@
 /*
- * Task 5.02: Simple implementation of linux cat program.
+ * Task 5.03.1:
+ *
+ * Note: For text files use high level input-output, for binary files
+ *       use syscalls.
  * 
  *
  */
