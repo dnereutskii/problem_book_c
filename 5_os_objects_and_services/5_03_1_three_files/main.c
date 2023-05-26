@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdlib.h> /* for exit() */
+#include <string.h>
 
 #define BLOCK_SIZE 1024
 
@@ -26,11 +28,12 @@ int main(int argc, char **argv)
 
     FILE *text = fopen(argv[1], "r");
     if (text == NULL) {
-	fprintf(stderr, "no text file\n");
-	return 0;
+	perror(argv[1]);
+	char *s = strerror(errno);
+	printf("%s\n", s);
+	exit(1);
     } else {
 	fclose(text);
     }
-
     return 0;
 }
