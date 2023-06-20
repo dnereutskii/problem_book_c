@@ -16,24 +16,63 @@
 #include <errno.h>
 #include <stdlib.h> /* for exit() */
 #include <string.h>
+#include <stdbool.h>
 
 #define BLOCK_SIZE 1024
+
+struct stream_poll {
+    unsigned int cnt; /* char for line counter */
+    bool space;       /* space flag */
+};
 
 int main(int argc, char **argv)
 {  
     if (argc < 4) {
-	fprintf(stderr, "too few arguments\n");
-	return 1;
+        fprintf(stderr, "too few arguments\n");
+        return 1;
     }
 
-    FILE *text = fopen(argv[1], "r");
-    if (text == NULL) {
-	perror(argv[1]);
-	char *s = strerror(errno);
-	printf("%s\n", s);
-	exit(1);
-    } else {
-	fclose(text);
+    struct stream_poll sp = {
+        .cnt = 0,
+        .space = false
+    };
+    int c;
+
+    FILE *text_read = fopen(argv[1], "r");
+    if (text_read == NULL) {
+        perror(argv[1]);
+        exit(1);
     }
+
+    FILE *text_write = fopen(argv[2], "w");
+    if (text_write == NULL) {
+        perror(argv[2]);
+        exit(2);
+    }
+    int binary_write = open(argv[3], O_WRONLY|O_CREAT);
+    
+
+    while ((c = fgetc(text_read)) != EOF) {
+        sp.cnt++;
+        if (c == ' ' && sp.cnt == 1)
+            sp.space = true;
+
+        if (c == '\n') {
+            fputc(c, text_write);
+            /* write cnt */
+            sp.cnt = 0;
+            sp.space = false;
+
+            continue;
+        } 
+
+        if (sp.space) {
+            fputc(c, text_write);
+        }
+    }
+
+    fclose(text_read);
+    fclose(text_write);
+
     return 0;
 }
