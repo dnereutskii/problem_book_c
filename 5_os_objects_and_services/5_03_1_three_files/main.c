@@ -21,7 +21,7 @@
 #define BLOCK_SIZE 1024
 
 struct stream_poll {
-    unsigned int cnt; /* char for line counter */
+    unsigned int cnt; /* counter of line characters */
     bool space;       /* space flag */
 };
 
@@ -44,12 +44,13 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    FILE *text_write = fopen(argv[2], "w");
+    FILE *text_write = fopen(argv[2], "w"); /* truncate or create for writing */
     if (text_write == NULL) {
         perror(argv[2]);
         exit(2);
     }
-    int binary_write = open(argv[3], O_WRONLY|O_CREAT);
+
+    int binary_write = open(argv[3], O_WRONLY|O_CREAT|O_TRUNC);
     
 
     while ((c = fgetc(text_read)) != EOF) {
@@ -66,13 +67,13 @@ int main(int argc, char **argv)
             continue;
         } 
 
-        if (sp.space) {
+        if (sp.space)
             fputc(c, text_write);
-        }
     }
 
     fclose(text_read);
     fclose(text_write);
+    close(binary_write);
 
     return 0;
 }
