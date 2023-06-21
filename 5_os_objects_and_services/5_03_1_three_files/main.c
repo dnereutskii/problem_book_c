@@ -61,9 +61,10 @@ int main(int argc, char **argv)
         if (c == ' ' && sp.cnt == 1) /* new line */
             sp.space = true;
 
-        if (c == '\n') { /* end of line */
-            fputc(c, text_write);
-            write(binary_write, &sp.cnt, sizeof(sp.cnt)); 
+        if (c == '\n') {  /* end of line */
+            if (sp.space) /* writeble line */
+                fputc(c, file_text_wr);
+            write(file_bin, &sp.cnt, sizeof(sp.cnt)); 
             sp.cnt = 0;
             sp.space = false;
 
