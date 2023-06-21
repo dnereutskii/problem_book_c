@@ -50,17 +50,20 @@ int main(int argc, char **argv)
         exit(2);
     }
 
-    int binary_write = open(argv[3], O_WRONLY|O_CREAT|O_TRUNC);
-    
+    int binary_write = open(argv[3], O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    if (binary_write == -1) {
+	perror(argv[3]);
+	exit(3);
+    }
 
     while ((c = fgetc(text_read)) != EOF) {
         sp.cnt++;
-        if (c == ' ' && sp.cnt == 1)
+        if (c == ' ' && sp.cnt == 1) /* new line */
             sp.space = true;
 
-        if (c == '\n') {
+        if (c == '\n') { /* end of line */
             fputc(c, text_write);
-            /* write cnt */
+            write(binary_write, &sp.cnt, sizeof(sp.cnt)); 
             sp.cnt = 0;
             sp.space = false;
 
