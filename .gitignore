@@ -1,3 +1,5 @@
 *~
 *.mk
+*.o
 prog
+prog.exe
