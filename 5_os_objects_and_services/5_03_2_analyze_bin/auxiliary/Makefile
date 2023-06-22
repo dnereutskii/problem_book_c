@@ -1,7 +1,7 @@
 CC = gcc
 RM = rm
 CFLAGS = -Wall -g -O0
-SRCMODULES =
+SRCMODULES = strstd.c
 OBJMODULES = $(SRCMODULES:.c=.o)
 PROJNAME = prog
 

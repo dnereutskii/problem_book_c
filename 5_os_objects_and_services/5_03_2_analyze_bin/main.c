@@ -1,7 +1,6 @@
 /*
  * Task 5.03.2 (ref to 2.54):
  *
- * ./prog -s 1 -n filename << stream of numbers
  * Note: For text files use high level input-output, for binary files
  *       use syscalls.
  * 

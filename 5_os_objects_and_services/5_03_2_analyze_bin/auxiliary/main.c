@@ -1,6 +1,8 @@
 /*
  * Task 5.03.2 (ref to 2.54) auxiliary program:
  *
+ * ./prog -s 1 -n filename << stream of numbers
+ * 
  * Note: For text files use high level input-output, for binary files
  *       use syscalls.
  * 
@@ -16,6 +18,7 @@
 #include <stdlib.h> /* for exit() */
 #include <string.h>
 #include <stdbool.h>
+#include "strstd.h"
 
 int main(int argc, char **argv)
 {  
@@ -33,10 +36,9 @@ int main(int argc, char **argv)
  
     int file_bin = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, 0666);
     if (file_bin == -1) {
-	    perror(argv[3]);
-	    exit(3);
+        perror(argv[3]);
+        exit(3);
     }
-
 
     return 0;
 }
