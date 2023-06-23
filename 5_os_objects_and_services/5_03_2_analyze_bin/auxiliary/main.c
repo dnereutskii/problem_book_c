@@ -20,6 +20,18 @@
 #include <stdbool.h>
 #include "strstd.h"
 
+struct arguments {
+        unsigned size;
+        const char * file_name;
+};
+
+static void analyze_args(int argc, char **argv, struct arguments *args);
+
+const char keys[][5] = {
+        "-s",
+        "-n",
+};
+
 int main(int argc, char **argv)
 {  
     if (argc < 2) {
@@ -41,4 +53,14 @@ int main(int argc, char **argv)
     }
 
     return 0;
+}
+
+static void analyze_args(int argc, char **argv, struct arguments *args)
+{
+        args = NULL;
+
+        if (argc < 3)
+                return;
+
+        
 }
