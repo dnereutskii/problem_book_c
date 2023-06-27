@@ -30,3 +30,34 @@ size_t string_length(const char *str)
 
     return cnt;
 }
+
+char * string_sub_search(const char *str, const char *sub)
+{
+    size_t cnt_cmp = 0;
+    size_t sub_len = string_length(sub);
+    const char *sub_cur = sub;
+    const char *sub_ret = NULL;
+
+    while (*str) {
+        if (*sub_cur == *str) {
+            if (!cnt_cmp)
+                sub_ret = str;
+            cnt_cmp++;
+            sub_cur++;
+        }
+        else {
+            if (cnt_cmp) {
+                sub_cur = sub;
+                cnt_cmp = 0;
+                sub_ret = NULL;
+            }
+        }
+        if (*sub_cur == '\0')
+            break;
+        str++;
+    }
+    if (cnt_cmp != sub_len)
+        sub_ret = NULL;
+    
+    return (char *)sub_ret;
+}

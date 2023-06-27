@@ -23,4 +23,13 @@ bool string_compare(const char *str1, const char *str2);
  */
 size_t string_length(const char *str);
 
+/**
+ * @brief Search first entrance for a substring in a string.
+ * 
+ * @param str String pointer.
+ * @param sub Substring pointer.
+ * @return char* Start pointer for substring.
+ */
+char * string_sub_search(const char *str, const char *sub);
+
 #endif /* STRSTD_H */
