@@ -14,18 +14,18 @@
 
 #define _LARGEFILE64_SOURCE
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+// #include <sys/types.h>
+// #include <sys/stat.h>
+// #include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
+// #include <errno.h>
 #include <stdlib.h> /* for exit() */
-#include <string.h>
 #include <stdbool.h>
 #include "strstd.h"
 
 
-#define MIN_NUM_ARGS 3
+#define MIN_NUM_ARGS    3
+#define SIZE_BYTE_STD   4
 
 enum {
     KEY_SIZE,
@@ -35,43 +35,55 @@ enum {
 };
 
 struct arguments {
-        int size;
-        const char * file_name;
+    int size_byte;
+    const char * file_name;
 };
 
+/**
+ * @brief Get the values of arguments  
+ * 
+ * @param argc 
+ * @param argv 
+ * @param args struct arguments pointer.
+ */
 static void get_args(int argc, char **argv, struct arguments *args);
 
-
 const char keys[][5] = {
-        "-s",
-        "-n",
+    "-s",
+    "-n",
 };
+
+const char *file_name_std = "binary";
 
 int main(int argc, char **argv)
 {  
-    // if (argc < 2) {
-    //     fprintf(stderr, "too few arguments\n");
-    //     return 1;
-    // }
-
-    // FILE *file_text_wr = fopen(file_name, "w"); /* truncate or create for writing */
-    // if (file_text_wr == NULL) {
-    //     perror(argv[2]);
-    //     fclose(file_text_rd);
-    //     exit(2);
-    // }
- 
-    // int file_bin = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, 0666);
-    // if (file_bin == -1) {
-    //     perror(argv[3]);
-    //     exit(3);
-    // }
     struct arguments myargs;
+    int res;
+    unsigned num;
+
+    /* Handling argument keys */
     get_args(argc, argv, &myargs);
-    if (myargs.file_name)
-        printf("-n = %s\n", myargs.file_name);
-    if (myargs.size != -1)
-        printf("-s = %u\n", myargs.size);
+    if (!myargs.file_name)
+        myargs.file_name = file_name_std;
+    if (myargs.size_byte == -1 || myargs.size_byte > SIZE_BYTE_STD)
+        myargs.size_byte = SIZE_BYTE_STD;
+
+    /* Create (truncate) binary file */
+    int file_bin = open(myargs.file_name, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    if (file_bin == -1) {
+        perror(myargs.file_name);
+        exit(1);
+    }
+
+    /* Handling stdin stream */
+    while ((res = scanf("%u", &num)) != EOF) {
+        int wr = 0;
+        while (wr != myargs.size_byte) {
+            wr += write(file_bin, &num, myargs.size_byte);
+        }
+    } 
+
+    close(file_bin);
 
     return 0;
 }
@@ -79,7 +91,7 @@ int main(int argc, char **argv)
 static void get_args(int argc, char **argv, struct arguments *args)
 {
     args->file_name = NULL;
-    args->size = -1;
+    args->size_byte = -1;
 
     if (argc < MIN_NUM_ARGS)
         return;
@@ -96,9 +108,9 @@ static void get_args(int argc, char **argv, struct arguments *args)
                     args->file_name = argv[j+1];
                     break;
                 case KEY_SIZE:
-                    res_hand = sscanf(argv[j+1], "%u", &args->size);
+                    res_hand = sscanf(argv[j+1], "%u", &args->size_byte);
                     if (res_hand != 1)
-                        args->size = -1;
+                        args->size_byte = -1;
                     break;
                 }
                 break;
