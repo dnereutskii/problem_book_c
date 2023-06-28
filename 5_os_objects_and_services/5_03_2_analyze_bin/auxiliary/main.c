@@ -77,6 +77,15 @@ int main(int argc, char **argv)
 
     /* Handling stdin stream */
     while ((res = scanf("%u", &num)) != EOF) {
+        // printf("res %d ", res);
+        if (res != 1) {  /* there is no converted number */
+            int c;
+            while ((c = getchar()) != ' ' && c != EOF) {} /* go to space char */
+            if (c == EOF)
+                break;
+            continue;
+        }
+        // printf("num %d\n", num);
         int wr = 0;
         while (wr != myargs.size_byte) {
             wr += write(file_bin, &num, myargs.size_byte);
