@@ -1,8 +1,15 @@
 /*
- * Task 5.03.2 (ref to 2.54):
- *
+ * Task 5.03.2 (ref to 2.54)
+ * 
+ * The program reads binary files (filenames from arguments) and analyzes them. 
+ * Creates text file (filename from last argument) into which content is
+ * written.
+ * Numbers in binary files are four bytes in size.
+ * Text file content: filename | count of numbers | max | min
+ * 
  * Note: For text files use high level input-output, for binary files
  *       use syscalls.
+ *       Use bingen program in auxiliary.
  * 
  */
 
@@ -17,26 +24,73 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define MIN_CNT_ARGS        3
+#define NUMBER_SIZE_BYTES   4
+#define TEXT_FILE_INDX      (argc - 1)
+#define SYSCALL_OPEN_ERROR  -1
+
+struct bin_info {
+    unsigned min;
+    unsigned max;
+    unsigned count;
+    const char *filename;
+    int fd;     /*file descriptor */
+};
+
+/**
+ * @brief 
+ * 
+ * @param bi 
+ */
+static void bin_file_analyze(struct bin_info *bi);
+
+/**
+ * @brief 
+ * 
+ * @param text_file 
+ * @param bi 
+ */
+static void text_file_write_bin_info(FILE *text_file, struct bin_info *bi);
+
 int main(int argc, char **argv)
 {  
-    if (argc < 2) {
+    /* check count of args */
+    if (argc < MIN_CNT_ARGS) {
         fprintf(stderr, "too few arguments\n");
         return 1;
     }
 
-    FILE *file_text_wr = fopen(file_name, "w"); /* truncate or create for writing */
+    /* create (truncate) text file */
+    FILE *file_text_wr = fopen(argv[TEXT_FILE_INDX], "w");
     if (file_text_wr == NULL) {
-        perror(argv[2]);
-        fclose(file_text_rd);
-        exit(2);
+        perror(argv[TEXT_FILE_INDX]);
+        exit(1);
     }
- 
-    int file_bin = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, 0666);
-    if (file_bin == -1) {
-	    perror(argv[3]);
-	    exit(3);
+
+    for (size_t i = 1; i < TEXT_FILE_INDX; i++) {
+        struct bin_info bi;
+        bi.filename = argv[i]; 
+        bi.fd = open(bi.filename, O_RDONLY);
+        if (bi.fd == SYSCALL_OPEN_ERROR) {
+            perror(bi.filename);
+            // exit(1);
+            continue;
+        }
+        bin_file_analyze(&bi);
+        text_file_write_bin_info(file_text_wr ,&bi);
+        close(bi.fd);
     }
 
 
     return 0;
+}
+
+static void bin_file_analyze(struct bin_info *bi)
+{
+
+}
+
+static void text_file_write_bin_info(FILE *text_file, struct bin_info *bi)
+{
+
 }
