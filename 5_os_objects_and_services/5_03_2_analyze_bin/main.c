@@ -28,6 +28,8 @@
 #define NUMBER_SIZE_BYTES   4
 #define TEXT_FILE_INDX      (argc - 1)
 #define SYSCALL_OPEN_ERROR  -1
+#define SYSCALL_READ_ERROR  -1
+#define SYSCALL_READ_EOF    0
 
 struct bin_info {
     unsigned min;
@@ -87,7 +89,17 @@ int main(int argc, char **argv)
 
 static void bin_file_analyze(struct bin_info *bi)
 {
+    char tmp[NUMBER_SIZE_BYTES];
+    int rd;
 
+    while ((rd = read(bi->fd, (void *)tmp, NUMBER_SIZE_BYTES)) != 
+           SYSCALL_READ_EOF) {
+        if (rd == SYSCALL_READ_ERROR)
+            break;
+        if (rd != NUMBER_SIZE_BYTES) {
+            
+        }
+    }
 }
 
 static void text_file_write_bin_info(FILE *text_file, struct bin_info *bi)
