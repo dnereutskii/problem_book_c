@@ -13,7 +13,7 @@
  * 
  */
 
-#define _LARGEFILE64_SOURCE
+//#define _LARGEFILE64_SOURCE
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -30,13 +30,20 @@
 #define SYSCALL_OPEN_ERROR  -1
 #define SYSCALL_READ_ERROR  -1
 #define SYSCALL_READ_EOF    0
+#define RD_BYTES_CNT        1
+
+enum binary_error {
+    BINARY_ERROR_RD,
+    BINARY_ERROR_NON_FOUR_BYTES,
+};
 
 struct bin_info {
     unsigned min;
     unsigned max;
-    unsigned count;
+    unsigned cnt;
     const char *filename;
     int fd;     /*file descriptor */
+    enum binary_error error;
 };
 
 /**
@@ -89,17 +96,30 @@ int main(int argc, char **argv)
 
 static void bin_file_analyze(struct bin_info *bi)
 {
-    char tmp[NUMBER_SIZE_BYTES];
+    char arr[NUMBER_SIZE_BYTES];
+    size_t i = 0;
     int rd;
+    unsigned num;
 
-    while ((rd = read(bi->fd, (void *)tmp, NUMBER_SIZE_BYTES)) != 
-           SYSCALL_READ_EOF) {
-        if (rd == SYSCALL_READ_ERROR)
-            break;
-        if (rd != NUMBER_SIZE_BYTES) {
-            
-        }
+    while ((rd = read(bi->fd, (void *)&arr[i], RD_BYTES_CNT)) !=
+	   SYSCALL_READ_EOF) {
+        if (rd == SYSCALL_READ_ERROR) {
+	    perror(bi->filename);
+	    bi->error = BINARY_ERROR_RD;
+	    return;
+	}
+        i++;
+	if (i == NUMBER_SIZE_BYTES) {
+	    num = *(unsigned *)arr;
+	    if (num > bi->max)
+		bi->max = num;
+	    if (num < bi->min)
+		bi->min = num;
+	    bi->cnt++;
+	}
     }
+    if (i != 0)
+	bi->error = BINARY_ERROR_NON_FOUR_BYTES;
 }
 
 static void text_file_write_bin_info(FILE *text_file, struct bin_info *bi)
