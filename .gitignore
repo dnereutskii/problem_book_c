@@ -2,4 +2,6 @@
 *.mk
 *.o
 prog
-prog.exe
+*.exe
+*.a
+*.json
