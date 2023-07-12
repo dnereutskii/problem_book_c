@@ -27,8 +27,8 @@
 #define MIN_CNT_ARGS        3
 #define NUMBER_SIZE_BYTES   4
 #define TEXT_FILE_INDX      (argc - 1)
-#define SYSCALL_OPEN_ERROR  -1
-#define SYSCALL_READ_ERROR  -1
+#define SYSCALL_OPEN_ERROR  (-1)
+#define SYSCALL_READ_ERROR  (-1)
 #define SYSCALL_READ_EOF    0
 #define RD_BYTES_CNT        1
 #define MAX_NUM_FOUR_BYTES  0xFFFFFFFFLU
@@ -36,6 +36,8 @@
 enum binary_error {
     BINARY_ERROR_RD,
     BINARY_ERROR_NON_FOUR_BYTES,
+
+    BINARY_ERROR_NUM,
 };
 
 struct bin_info {
@@ -62,6 +64,28 @@ static void bin_file_analyze(struct bin_info *bi);
  */
 static void text_file_write_bin_info(FILE *text_file, struct bin_info *bi);
 
+/**
+ * @brief 
+ * 
+ */
+static bool is_error(enum binary_error err);
+
+/**
+ * @brief Get the text error code string.
+ * 
+ * @param err enum binary_error.
+ * @return char* Error code string.
+ */
+static char * get_text_error_code(enum binary_error err);
+
+static char error_string_rd[] = "binary file read error";
+static char error_string_non_four_bytes[] = "non four bytes binary file";
+
+static char *error_strings[] = {
+    [BINARY_ERROR_RD] = error_string_rd,
+    [BINARY_ERROR_NON_FOUR_BYTES] = error_string_non_four_bytes,
+};
+
 int main(int argc, char **argv)
 {  
     /* check count of args */
@@ -81,16 +105,18 @@ int main(int argc, char **argv)
         struct bin_info bi;
         bi.filename = argv[i]; 
         bi.fd = open(bi.filename, O_RDONLY);
+        bi.error = BINARY_ERROR_NUM;
         if (bi.fd == SYSCALL_OPEN_ERROR) {
             perror(bi.filename);
             // exit(1);
             continue;
         }
         bin_file_analyze(&bi);
-        text_file_write_bin_info(file_text_wr ,&bi);
+        text_file_write_bin_info(file_text_wr, &bi);
         close(bi.fd);
     }
 
+    fclose(file_text_wr);
 
     return 0;
 }
@@ -104,29 +130,46 @@ static void bin_file_analyze(struct bin_info *bi)
 
     bi->max = 0;
     bi->min = MAX_NUM_FOUR_BYTES;
+    bi->cnt = 0;
     while ((rd = read(bi->fd, (void *)&arr[i], RD_BYTES_CNT)) !=
-	   SYSCALL_READ_EOF) {
+            SYSCALL_READ_EOF) {
         if (rd == SYSCALL_READ_ERROR) {
-	    perror(bi->filename);
-	    bi->error = BINARY_ERROR_RD;
-	    return;
-	}
+            perror(bi->filename);
+            bi->error = BINARY_ERROR_RD;
+            return;
+        }
         i++;
-	if (i == NUMBER_SIZE_BYTES) {
-	    num = *(unsigned *)arr;
-	    if (num > bi->max)
-		bi->max = num;
-	    if (num < bi->min)
-		bi->min = num;
-	    bi->cnt++;
-	    i = 0;
-	}
+        if (i == NUMBER_SIZE_BYTES) {
+            num = *(unsigned *)arr; /* big-endian */
+            if (num > bi->max)
+            bi->max = num;
+            if (num < bi->min)
+            bi->min = num;
+            bi->cnt++;
+            i = 0;
+        }
     }
     if (i != 0)
-	bi->error = BINARY_ERROR_NON_FOUR_BYTES;
+        bi->error = BINARY_ERROR_NON_FOUR_BYTES;
 }
 
 static void text_file_write_bin_info(FILE *text_file, struct bin_info *bi)
 {
+    if (is_error(bi->error)) {
+        char * str_err = get_text_error_code(bi->error);
+        fprintf(text_file, "%s: %s\n", bi->filename, str_err);
+    } else {
+        fprintf(text_file, "%s: cnt %u, min %u, max %u\n", 
+                bi->filename, bi->cnt, bi->min, bi->max);
+    }
+}
 
+static bool is_error(enum binary_error err)
+{
+    return (err == BINARY_ERROR_NUM) ? false : true;  
+}
+
+static char * get_text_error_code(enum binary_error err)
+{
+    return error_strings[err];
 }
