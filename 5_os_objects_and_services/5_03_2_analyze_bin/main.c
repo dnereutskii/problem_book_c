@@ -31,6 +31,7 @@
 #define SYSCALL_READ_ERROR  -1
 #define SYSCALL_READ_EOF    0
 #define RD_BYTES_CNT        1
+#define MAX_NUM_FOUR_BYTES  0xFFFFFFFFLU
 
 enum binary_error {
     BINARY_ERROR_RD,
@@ -101,6 +102,8 @@ static void bin_file_analyze(struct bin_info *bi)
     int rd;
     unsigned num;
 
+    bi->max = 0;
+    bi->min = MAX_NUM_FOUR_BYTES;
     while ((rd = read(bi->fd, (void *)&arr[i], RD_BYTES_CNT)) !=
 	   SYSCALL_READ_EOF) {
         if (rd == SYSCALL_READ_ERROR) {
@@ -116,6 +119,7 @@ static void bin_file_analyze(struct bin_info *bi)
 	    if (num < bi->min)
 		bi->min = num;
 	    bi->cnt++;
+	    i = 0;
 	}
     }
     if (i != 0)
