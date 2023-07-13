@@ -1,2 +1,18 @@
-# stolyarov_c
-Solution variants of mine to the problems of the "Programming Introduction to the profession" book by A.V. Stolyarov.
+# Решения задач из книги А.В. Столярова
+
+Мои варианты решений задач из [задачника А.В. Столярова][1].
+
+## Список задач
+
+| Часть | Задача | Подзадача | Краткое название | Ссылка |
+|-------|--------|-----------|------------------|--------|
+| 5     | 1      |           | file size        |        |
+| 5     | 2      |           | cat              |        |
+| 5     | 3      | 1         | three files      | 2.53   |
+| 5     | 3      | 2         | analyze bin      | 2.54   |
+
+## Источники
+
+[1]: Столяров А.В. Программирование: Введение в профессию. Задачи и этюды / 
+А.В. Столяров. - М.: МАКС Пресс, 2022. — 156 c. - 
+URL: http://stolyarov.info/books/programming_intro/taskbook
