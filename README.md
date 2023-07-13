@@ -13,6 +13,8 @@
 
 ## Источники
 
-[1]: Столяров А.В. Программирование: Введение в профессию. Задачи и этюды / 
+1. Столяров А.В. Программирование: Введение в профессию. Задачи и этюды / 
 А.В. Столяров. - М.: МАКС Пресс, 2022. — 156 c. - 
-URL: http://stolyarov.info/books/programming_intro/taskbook
+
+## Источник URL
+[1]: http://stolyarov.info/books/programming_intro/taskbook
