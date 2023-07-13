@@ -76,12 +76,12 @@ static bool is_error(enum binary_error err);
  * @param err enum binary_error.
  * @return char* Error code string.
  */
-static char * get_text_error_code(enum binary_error err);
+static const char * get_text_error_code(enum binary_error err);
 
-static char error_string_rd[] = "binary file read error";
-static char error_string_non_four_bytes[] = "non four bytes binary file";
+static const char error_string_rd[] = "binary file read error";
+static const char error_string_non_four_bytes[] = "binary file non four bytes";
 
-static char *error_strings[] = {
+static const char *error_strings[] = {
     [BINARY_ERROR_RD] = error_string_rd,
     [BINARY_ERROR_NON_FOUR_BYTES] = error_string_non_four_bytes,
 };
@@ -101,6 +101,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    /* go through binary files */
     for (size_t i = 1; i < TEXT_FILE_INDX; i++) {
         struct bin_info bi;
         bi.filename = argv[i]; 
@@ -131,6 +132,7 @@ static void bin_file_analyze(struct bin_info *bi)
     bi->max = 0;
     bi->min = MAX_NUM_FOUR_BYTES;
     bi->cnt = 0;
+
     while ((rd = read(bi->fd, (void *)&arr[i], RD_BYTES_CNT)) !=
             SYSCALL_READ_EOF) {
         if (rd == SYSCALL_READ_ERROR) {
@@ -142,9 +144,9 @@ static void bin_file_analyze(struct bin_info *bi)
         if (i == NUMBER_SIZE_BYTES) {
             num = *(unsigned *)arr; /* big-endian */
             if (num > bi->max)
-            bi->max = num;
+                bi->max = num;
             if (num < bi->min)
-            bi->min = num;
+                bi->min = num;
             bi->cnt++;
             i = 0;
         }
@@ -156,7 +158,7 @@ static void bin_file_analyze(struct bin_info *bi)
 static void text_file_write_bin_info(FILE *text_file, struct bin_info *bi)
 {
     if (is_error(bi->error)) {
-        char * str_err = get_text_error_code(bi->error);
+        const char * str_err = get_text_error_code(bi->error);
         fprintf(text_file, "%s: %s\n", bi->filename, str_err);
     } else {
         fprintf(text_file, "%s: cnt %u, min %u, max %u\n", 
@@ -169,7 +171,7 @@ static bool is_error(enum binary_error err)
     return (err == BINARY_ERROR_NUM) ? false : true;  
 }
 
-static char * get_text_error_code(enum binary_error err)
+static const char * get_text_error_code(enum binary_error err)
 {
     return error_strings[err];
 }
