@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define READ_BLOCK_SIZE     4096
+#define READ_BLOCK_SIZE     1024
 #define MIN_ARGS_CNT        2
 #define SYSCALL_OPEN_ERR    (-1)
 #define SYSCALL_READ_EOF    (0)
@@ -53,12 +53,17 @@ static size_t count_lines(int fd)
     char buf[READ_BLOCK_SIZE];
 
     while((rd = read(fd, buf, READ_BLOCK_SIZE)) != SYSCALL_READ_EOF) {
+        if (rd == SYSCALL_READ_ERR) {
+            perror(NULL);
+            return 0;
+        }
         line_cnt += count_char(buf, rd, '\n');
     }
     
     return line_cnt;
 }
 
+#ifndef RECURSIVE
 static size_t count_char(char *buf, size_t buf_size, char ch)
 {
     size_t char_cnt = 0;
@@ -72,3 +77,16 @@ static size_t count_char(char *buf, size_t buf_size, char ch)
 
     return char_cnt;
 }
+#endif
+
+#ifdef RECURSIVE
+static size_t count_char(char *buf, size_t buf_size, char ch)
+{
+    if (buf_size == 0)
+        return 0;
+    if (*buf == ch)
+        return (1 + count_char(++buf, --buf_size, ch));
+    else
+        count_char(++buf, --buf_size, ch);
+}
+#endif

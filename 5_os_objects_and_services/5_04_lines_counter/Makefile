@@ -1,6 +1,7 @@
 CC = gcc
 RM = rm
 CFLAGS = -Wall -g -O0
+# CFLAGS = -DRECURSIVE
 SRCMODULES =
 OBJMODULES = $(SRCMODULES:.c=.o)
 PROJNAME = prog
