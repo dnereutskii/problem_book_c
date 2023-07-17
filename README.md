@@ -10,6 +10,7 @@
 | 5     | 2      |           | cat              |        |
 | 5     | 3      | 1         | three files      | 2.53   |
 | 5     | 3      | 2         | analyze bin      | 2.54   |
+| 5     | 4      |           | lines counter    |        |
 
 ## Источники
 
