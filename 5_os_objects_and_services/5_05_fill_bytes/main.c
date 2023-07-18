@@ -1,7 +1,9 @@
 /*
  * Task 5.05
- *
- * ./prog test.txt pos len byte
+ * 
+ * Writes bytes sequence with length len starting from pos in a text or 
+ * binary file.
+ * Call string: ./prog test.txt pos (dec) len (dec) byte_value (dec)
  *
  * @author rhetti
  * @date 07.2023
@@ -13,7 +15,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define WRITE_BLOCK_SIZE    16
+#define WRITE_BLOCK_SIZE    4096
 #define MIN_ARGS_CNT        5
 #define BYTE_MAX_VALUE      255    
 #define SYSCALL_OPEN_ERR    (-1)
