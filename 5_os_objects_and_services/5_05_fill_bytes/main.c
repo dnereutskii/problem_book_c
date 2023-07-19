@@ -49,6 +49,7 @@ int main(int argc, char **argv)
 
     struct args_info ainfo;
     
+    /* open file (text or binary)*/
     char *file_name = argv[ARGS_INDX_FILE_NAME];
     ainfo.fd = open(file_name, O_WRONLY);
     if (ainfo.fd == SYSCALL_OPEN_ERR) {
@@ -56,16 +57,19 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    /* get position */
     if (sscanf(argv[ARGS_INDX_POS], "%u", &ainfo.pos) != 1) {
         fprintf(stderr, "error handling %s\n", argv[ARGS_INDX_POS]);
         return 1;
     }
 
+    /* get length */
     if (sscanf(argv[ARGS_INDX_LEN], "%u", &ainfo.len) != 1) {
         fprintf(stderr, "error handling %s\n", argv[ARGS_INDX_LEN]);
         return 1;
     }
 
+    /* get byte value */
     if (sscanf(argv[ARGS_INDX_BYTE], "%u", &ainfo.byte) != 1) {
         fprintf(stderr, "error handling %s\n", argv[ARGS_INDX_BYTE]);
         return 1;
@@ -76,6 +80,7 @@ int main(int argc, char **argv)
     }
 
     // printf("%s %u %u %u\n", file_name, ainfo.pos, ainfo.len, ainfo.byte);
+    // printf("%u\n", sizeof(size_t));
 
     fill_bytes(&ainfo);
     
