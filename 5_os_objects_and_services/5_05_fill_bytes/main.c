@@ -58,13 +58,13 @@ int main(int argc, char **argv)
     }
 
     /* get position */
-    if (sscanf(argv[ARGS_INDX_POS], "%u", &ainfo.pos) != 1) {
+    if (sscanf(argv[ARGS_INDX_POS], "%lu", &ainfo.pos) != 1) {
         fprintf(stderr, "error handling %s\n", argv[ARGS_INDX_POS]);
         return 1;
     }
 
     /* get length */
-    if (sscanf(argv[ARGS_INDX_LEN], "%u", &ainfo.len) != 1) {
+    if (sscanf(argv[ARGS_INDX_LEN], "%lu", &ainfo.len) != 1) {
         fprintf(stderr, "error handling %s\n", argv[ARGS_INDX_LEN]);
         return 1;
     }
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     }
 
     // printf("%s %u %u %u\n", file_name, ainfo.pos, ainfo.len, ainfo.byte);
-    // printf("%u\n", sizeof(size_t));
+    // printf("%lu\n", sizeof(size_t));
 
     fill_bytes(&ainfo);
     
