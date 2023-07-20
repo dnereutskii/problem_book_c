@@ -33,9 +33,11 @@ enum {
 struct args_info {
     int fd;
     unsigned key; /* 32-bit unsigned integer */
+    const char *file_name;
 };
 
 static void encrypt_file(struct args_info *ai);
+static void encrypt_file2(struct args_info *ai);
 static void encrypt_xor(unsigned char *buf, size_t buf_size, unsigned key);
 
 int main(int argc, char **argv)
@@ -48,10 +50,10 @@ int main(int argc, char **argv)
     struct args_info ainfo;
     
     /* open file (text or binary)*/
-    char *file_name = argv[ARGS_INDX_FILE_NAME];
-    ainfo.fd = open(file_name, O_RDWR);
+    ainfo.file_name = argv[ARGS_INDX_FILE_NAME];
+    ainfo.fd = open(ainfo.file_name, O_RDWR);
     if (ainfo.fd == SYSCALL_OPEN_ERR) {
-        perror(file_name);
+        perror(ainfo.file_name);
         return 1;
     }
 
@@ -67,7 +69,9 @@ int main(int argc, char **argv)
     // encrypt_xor(buf, sizeof(buf), 0xAABBCCDD);
     // encrypt_xor(buf, sizeof(buf), 0xAABBCCDD);
     
-    encrypt_file(&ainfo);
+    // encrypt_file(&ainfo);
+    encrypt_file2(&ainfo);
+    
 
     close(ainfo.fd);
     
@@ -89,7 +93,7 @@ static void encrypt_file(struct args_info *ai)
         while (rd != RDWR_BLOCK_SIZE) {
             int res = read(ai->fd, &buf[rd], RDWR_BLOCK_SIZE - rd);
             if (res == SYSCALL_READ_ERR) {
-                fprintf(stderr, "read error\n");
+                perror(ai->file_name);
                 return;
             }
             rd += res;
@@ -101,7 +105,7 @@ static void encrypt_file(struct args_info *ai)
         while (wr != RDWR_BLOCK_SIZE) {
             int res = write(ai->fd, &buf[wr], RDWR_BLOCK_SIZE - wr);
             if (res == SYSCALL_WRITE_ERR) {
-                fprintf(stderr, "write error\n");
+                perror(ai->file_name);
                 return;
             }
             wr += res;
@@ -127,6 +131,45 @@ static void encrypt_file(struct args_info *ai)
             return;
         }
         wr += res;
+    }
+}
+
+static void encrypt_file2(struct args_info *ai)
+{
+    long file_size = lseek(ai->fd, 0, SEEK_END);
+    unsigned char buf[RDWR_BLOCK_SIZE];
+    int wr, rd, rest;
+    long pos_rd = lseek(ai->fd, 0, SEEK_SET);
+    long pos_wr = pos_rd;
+
+    while((rd = read(ai->fd, buf, RDWR_BLOCK_SIZE)) != SYSCALL_READ_EOF) {
+        if (rd == SYSCALL_READ_ERR) {
+            perror(ai->file_name);
+            return;
+        }
+        pos_rd = lseek(ai->fd, 0, SEEK_CUR); /* save rd pos */
+        if (pos_rd != file_size) {
+            rest = rd % BITS_IN_BYTE;
+            if (rest) {
+                rd -= rest; /* after this may be 0 */
+                pos_rd = lseek(ai->fd, -rest, SEEK_CUR); /* save&set rd pos */
+            }
+        }
+        if (rd == 0) /* pass 0 */
+            continue;
+        encrypt_xor(buf, rd, ai->key);
+        wr = 0;
+        lseek(ai->fd, pos_wr, SEEK_SET); /* set wr pos */
+        while (wr != rd) {
+            int res = write(ai->fd, &buf[wr], rd - wr);
+            if (res == SYSCALL_WRITE_ERR) {
+                perror(ai->file_name);
+                return;
+            }
+            wr += res;
+        }
+        pos_wr = lseek(ai->fd, 0, SEEK_CUR); /* save wr pos */
+        lseek(ai->fd, pos_rd, SEEK_SET); /* set rd pod */
     }
 }
 
