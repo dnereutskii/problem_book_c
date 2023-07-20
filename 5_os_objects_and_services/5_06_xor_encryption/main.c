@@ -35,7 +35,7 @@ struct args_info {
     unsigned key; /* 32-bit unsigned integer */
 };
 
-static void encrypt(struct args_info *ai);
+static void encrypt_file(struct args_info *ai);
 static void encrypt_xor(unsigned char *buf, size_t buf_size, unsigned key);
 
 int main(int argc, char **argv)
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-static void encrypt(struct args_info *ai)
+static void encrypt_file(struct args_info *ai)
 {
     // long file_size = lseek(ai->fd, 0, SEEK_END);
     // size_t block_cnt = file_size / RDWR_BLOCK_SIZE;
