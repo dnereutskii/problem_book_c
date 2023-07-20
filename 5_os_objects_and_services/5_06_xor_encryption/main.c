@@ -61,11 +61,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    unsigned char buf[] = {
-        1, 2, 3, 4, 5, 6, 7
-    };
-    encrypt_xor(buf, sizeof(buf), 0xAABBCCDD);
+    // unsigned char buf[] = {
+        // 1, 2, 3, 4, 5, 6, 7
+    // };
+    // encrypt_xor(buf, sizeof(buf), 0xAABBCCDD);
+    // encrypt_xor(buf, sizeof(buf), 0xAABBCCDD);
     
+    encrypt_file(&ainfo);
+
     close(ainfo.fd);
     
     return 0;
@@ -73,11 +76,58 @@ int main(int argc, char **argv)
 
 static void encrypt_file(struct args_info *ai)
 {
-    // long file_size = lseek(ai->fd, 0, SEEK_END);
-    // size_t block_cnt = file_size / RDWR_BLOCK_SIZE;
-
-    // unsigned char buf[RDWR_BLOCK_SIZE];
-    // int rd;
+    unsigned char buf[RDWR_BLOCK_SIZE];
+    long file_size = lseek(ai->fd, 0, SEEK_END);
+    int wr, rd;
+    size_t block_cnt = file_size / RDWR_BLOCK_SIZE;
+    size_t rest_cnt = file_size % RDWR_BLOCK_SIZE;
+    lseek(ai->fd, 0, SEEK_SET);
+    /* block handler */
+    for (size_t i = 0; i < block_cnt; i++) {
+        /* read block */
+        rd = 0;
+        while (rd != RDWR_BLOCK_SIZE) {
+            int res = read(ai->fd, &buf[rd], RDWR_BLOCK_SIZE - rd);
+            if (res == SYSCALL_READ_ERR) {
+                fprintf(stderr, "read error\n");
+                return;
+            }
+            rd += res;
+        }
+        encrypt_xor(buf, RDWR_BLOCK_SIZE, ai->key);
+        /* write block */
+        lseek(ai->fd, i * RDWR_BLOCK_SIZE, SEEK_SET);
+        wr = 0;
+        while (wr != RDWR_BLOCK_SIZE) {
+            int res = write(ai->fd, &buf[wr], RDWR_BLOCK_SIZE - wr);
+            if (res == SYSCALL_WRITE_ERR) {
+                fprintf(stderr, "write error\n");
+                return;
+            }
+            wr += res;
+        }
+    }
+    /* remainder handler */
+    rd = 0;
+    while (rd != rest_cnt) {
+        int res = read(ai->fd, &buf[rd], rest_cnt - rd);
+        if (res == SYSCALL_READ_ERR) {
+            fprintf(stderr, "read error\n");
+            return;
+        }
+        rd += res;
+    }
+    encrypt_xor(buf, rest_cnt, ai->key);
+    lseek(ai->fd, -rest_cnt, SEEK_END);
+    wr = 0;
+    while (wr != rest_cnt) {
+        int res = write(ai->fd, &buf[wr], rest_cnt - wr);
+        if (res == SYSCALL_WRITE_ERR) {
+            fprintf(stderr, "write error\n");
+            return;
+        }
+        wr += res;
+    }
 }
 
 static void encrypt_xor(unsigned char *buf, size_t buf_size, unsigned key)
