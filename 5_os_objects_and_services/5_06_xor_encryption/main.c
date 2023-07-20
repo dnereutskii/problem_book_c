@@ -16,10 +16,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define READ_BLOCK_SIZE     4096
-#define WRITE_BLOCK_SIZE    4096
+#define RDWR_BLOCK_SIZE     4096
 #define MIN_ARGS_CNT        3
-#define BYTE_MAX_VALUE      255    
+#define KEY_SIZE_BYTES      4
+#define BITS_IN_BYTE        8
 #define SYSCALL_OPEN_ERR    (-1)
 #define SYSCALL_READ_EOF    (0)
 #define SYSCALL_READ_ERR    (-1)
@@ -29,10 +29,14 @@ enum {
     ARGS_INDX_FILE_NAME = 1,
     ARGS_INDX_KEY,
 };
+
 struct args_info {
     int fd;
     unsigned key; /* 32-bit unsigned integer */
 };
+
+static void encrypt(struct args_info *ai);
+static void encrypt_xor(unsigned char *buf, size_t buf_size, unsigned key);
 
 int main(int argc, char **argv)
 {
@@ -45,7 +49,7 @@ int main(int argc, char **argv)
     
     /* open file (text or binary)*/
     char *file_name = argv[ARGS_INDX_FILE_NAME];
-    ainfo.fd = open(file_name, O_WRONLY);
+    ainfo.fd = open(file_name, O_RDWR);
     if (ainfo.fd == SYSCALL_OPEN_ERR) {
         perror(file_name);
         return 1;
@@ -57,9 +61,38 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    unsigned char buf[] = {
+        1, 2, 3, 4, 5, 6, 7
+    };
+    encrypt_xor(buf, sizeof(buf), 0xAABBCCDD);
     
     close(ainfo.fd);
     
     return 0;
 }
 
+static void encrypt(struct args_info *ai)
+{
+    // long file_size = lseek(ai->fd, 0, SEEK_END);
+    // size_t block_cnt = file_size / RDWR_BLOCK_SIZE;
+
+    // unsigned char buf[RDWR_BLOCK_SIZE];
+    // int rd;
+}
+
+static void encrypt_xor(unsigned char *buf, size_t buf_size, unsigned key)
+{
+    size_t four_byte_cnt = buf_size / KEY_SIZE_BYTES;
+    size_t rest_cnt = buf_size % KEY_SIZE_BYTES;
+    /* four-byte number handler */
+    for (size_t i = 0; i < four_byte_cnt; i++) {
+        unsigned *num = (unsigned *)&buf[i * KEY_SIZE_BYTES];
+        *num ^= key;
+    }
+    /* rest bytes handler */
+    for (size_t i = 0; i < rest_cnt; i++) {
+        unsigned char *num = &buf[buf_size - 1 - i];
+        unsigned char key_byte = (unsigned char)(key >> (i * BITS_IN_BYTE));
+        *num ^= key_byte;
+    }
+}
