@@ -139,27 +139,27 @@ static void encrypt_file2(struct args_info *ai)
     long file_size = lseek(ai->fd, 0, SEEK_END);
     unsigned char buf[RDWR_BLOCK_SIZE];
     int wr, rd, rest;
-    long pos_rd = lseek(ai->fd, 0, SEEK_SET);
-    long pos_wr = pos_rd;
+    long pos = lseek(ai->fd, 0, SEEK_SET);
+    //long pos_wr = pos_rd;
 
     while((rd = read(ai->fd, buf, RDWR_BLOCK_SIZE)) != SYSCALL_READ_EOF) {
         if (rd == SYSCALL_READ_ERR) {
             perror(ai->file_name);
             return;
         }
-        pos_rd = lseek(ai->fd, 0, SEEK_CUR); /* save rd pos */
-        if (pos_rd != file_size) {
+        pos = lseek(ai->fd, 0, SEEK_CUR); /* save rd pos */
+        if (pos != file_size) {
             rest = rd % BITS_IN_BYTE;
             if (rest) {
                 rd -= rest; /* after this may be 0 */
-                pos_rd = lseek(ai->fd, -rest, SEEK_CUR); /* save&set rd pos */
+                pos = lseek(ai->fd, -rest, SEEK_CUR); /* save&set rd pos */
             }
         }
         if (rd == 0) /* pass 0 */
             continue;
         encrypt_xor(buf, rd, ai->key);
         wr = 0;
-        lseek(ai->fd, pos_wr, SEEK_SET); /* set wr pos */
+        lseek(ai->fd, -rd, SEEK_CUR); /* set wr pos */
         while (wr != rd) {
             int res = write(ai->fd, &buf[wr], rd - wr);
             if (res == SYSCALL_WRITE_ERR) {
@@ -168,8 +168,8 @@ static void encrypt_file2(struct args_info *ai)
             }
             wr += res;
         }
-        pos_wr = lseek(ai->fd, 0, SEEK_CUR); /* save wr pos */
-        lseek(ai->fd, pos_rd, SEEK_SET); /* set rd pod */
+        //pos_wr = lseek(ai->fd, 0, SEEK_CUR); /* save wr pos */
+        //lseek(ai->fd, pos_rd, SEEK_SET); /* set rd pod */
     }
 }
 
@@ -184,7 +184,7 @@ static void encrypt_xor(unsigned char *buf, size_t buf_size, unsigned key)
     }
     /* rest bytes handler */
     for (size_t i = 0; i < rest_cnt; i++) {
-        unsigned char *num = &buf[buf_size - 1 - i];
+        unsigned char *num = &buf[buf_size - rest_cnt + i];
         unsigned char key_byte = (unsigned char)(key >> (i * BITS_IN_BYTE));
         *num ^= key_byte;
     }
