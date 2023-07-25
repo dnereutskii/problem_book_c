@@ -3,7 +3,7 @@ RM = rm
 CFLAGS = -Wall -g -O0
 SRCMODULES =
 OBJMODULES = $(SRCMODULES:.c=.o)
-PROJNAME = prog
+PROJNAME = encrypt
 
 # mod1.o: mod1.c mod1.h
 # 	$(CC) $(CFLAGS) -c $< -o $@
