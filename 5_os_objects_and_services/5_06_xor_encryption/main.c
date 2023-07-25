@@ -37,7 +37,6 @@ struct args_info {
 };
 
 static void encrypt_file(struct args_info *ai);
-static void encrypt_file2(struct args_info *ai);
 static void encrypt_xor(unsigned char *buf, size_t buf_size, unsigned key);
 
 int main(int argc, char **argv)
@@ -69,9 +68,7 @@ int main(int argc, char **argv)
     // encrypt_xor(buf, sizeof(buf), 0xAABBCCDD);
     // encrypt_xor(buf, sizeof(buf), 0xAABBCCDD);
     
-    // encrypt_file(&ainfo);
-    encrypt_file2(&ainfo);
-    
+    encrypt_file(&ainfo);
 
     close(ainfo.fd);
     
@@ -80,79 +77,23 @@ int main(int argc, char **argv)
 
 static void encrypt_file(struct args_info *ai)
 {
-    unsigned char buf[RDWR_BLOCK_SIZE];
-    long file_size = lseek(ai->fd, 0, SEEK_END);
-    int wr, rd;
-    size_t block_cnt = file_size / RDWR_BLOCK_SIZE;
-    size_t rest_cnt = file_size % RDWR_BLOCK_SIZE;
-    lseek(ai->fd, 0, SEEK_SET);
-    /* block handler */
-    for (size_t i = 0; i < block_cnt; i++) {
-        /* read block */
-        rd = 0;
-        while (rd != RDWR_BLOCK_SIZE) {
-            int res = read(ai->fd, &buf[rd], RDWR_BLOCK_SIZE - rd);
-            if (res == SYSCALL_READ_ERR) {
-                perror(ai->file_name);
-                return;
-            }
-            rd += res;
-        }
-        encrypt_xor(buf, RDWR_BLOCK_SIZE, ai->key);
-        /* write block */
-        lseek(ai->fd, i * RDWR_BLOCK_SIZE, SEEK_SET);
-        wr = 0;
-        while (wr != RDWR_BLOCK_SIZE) {
-            int res = write(ai->fd, &buf[wr], RDWR_BLOCK_SIZE - wr);
-            if (res == SYSCALL_WRITE_ERR) {
-                perror(ai->file_name);
-                return;
-            }
-            wr += res;
-        }
-    }
-    /* remainder handler */
-    rd = 0;
-    while (rd != rest_cnt) {
-        int res = read(ai->fd, &buf[rd], rest_cnt - rd);
-        if (res == SYSCALL_READ_ERR) {
-            fprintf(stderr, "read error\n");
-            return;
-        }
-        rd += res;
-    }
-    encrypt_xor(buf, rest_cnt, ai->key);
-    lseek(ai->fd, -rest_cnt, SEEK_END);
-    wr = 0;
-    while (wr != rest_cnt) {
-        int res = write(ai->fd, &buf[wr], rest_cnt - wr);
-        if (res == SYSCALL_WRITE_ERR) {
-            fprintf(stderr, "write error\n");
-            return;
-        }
-        wr += res;
-    }
-}
-
-static void encrypt_file2(struct args_info *ai)
-{
     long file_size = lseek(ai->fd, 0, SEEK_END);
     unsigned char buf[RDWR_BLOCK_SIZE];
     int wr, rd, rest;
-    long pos = lseek(ai->fd, 0, SEEK_SET);
-    //long pos_wr = pos_rd;
+    size_t block = RDWR_BLOCK_SIZE; /* for debug purposes */ 
+    long cur_pos = lseek(ai->fd, 0, SEEK_SET);
 
-    while((rd = read(ai->fd, buf, RDWR_BLOCK_SIZE)) != SYSCALL_READ_EOF) {
-        if (rd == SYSCALL_READ_ERR) {
+    while((rd = read(ai->fd, buf, block)) != SYSCALL_READ_EOF) { 
+        if (rd == SYSCALL_READ_ERR) { /* rd moves carry forward */
             perror(ai->file_name);
             return;
         }
-        pos = lseek(ai->fd, 0, SEEK_CUR); /* save rd pos */
-        if (pos != file_size) {
-            rest = rd % BITS_IN_BYTE;
+        cur_pos = lseek(ai->fd, 0, SEEK_CUR); /* save rd pos */
+        if (cur_pos != file_size) {
+            rest = rd % KEY_SIZE_BYTES;
             if (rest) {
                 rd -= rest; /* after this may be 0 */
-                pos = lseek(ai->fd, -rest, SEEK_CUR); /* save&set rd pos */
+                cur_pos = lseek(ai->fd, -rest, SEEK_CUR); /* save&set rd pos */
             }
         }
         if (rd == 0) /* pass 0 */
@@ -168,8 +109,6 @@ static void encrypt_file2(struct args_info *ai)
             }
             wr += res;
         }
-        //pos_wr = lseek(ai->fd, 0, SEEK_CUR); /* save wr pos */
-        //lseek(ai->fd, pos_rd, SEEK_SET); /* set rd pod */
     }
 }
 
