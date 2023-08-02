@@ -1,9 +1,12 @@
 CC = gcc
 RM = rm
-CFLAGS = -Wall -g -O0
+PROJNAME = bd
+
+CFLAGS = -Wall -g -O0 -pedantic
+CFLAGS += -I../../auxiliary/
+
 SRCMODULES = ../../auxiliary/strstd.c
 OBJMODULES = $(SRCMODULES:.c=.o)
-PROJNAME = table
 
 # mod1.o: mod1.c mod1.h
 # 	$(CC) $(CFLAGS) -c $< -o $@
