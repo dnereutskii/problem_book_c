@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "strstd.h"
 
 /* SYSCALLS defines */
 #define SYSCALL_OPEN_ERR    (-1)
@@ -32,7 +33,7 @@
 #define BITS_IN_BYTE        8
 
 
-enum {
+enum args_indx {
     ARGS_INDX_PROG_NAME,
     ARGS_INDX_FILE_NAME,
     ARGS_INDX_CMD,
@@ -41,7 +42,7 @@ enum {
     ARGS_INDX_NUM,
 };
 
-enum {
+enum cmd_indx {
     CMD_INDX_ADD,
     CMD_INDX_QUARY,
     CMD_INDX_LIST,
@@ -64,6 +65,7 @@ const char * cmd_strings[] = {
 };
 
 static void fill_args_info(struct args_info ai);
+static const char * get_cmd_string(const char * str);
 
 int main(int argc, char **argv)
 {
@@ -72,6 +74,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    const char * cmd = get_cmd_string(argv[ARGS_INDX_CMD]);
+    if (cmd)
+        printf("%s\n", cmd);
+    else
+        printf("no that cmd\n");
+    
     struct args_info ainfo;
     
     /* open file (text or binary)*/
@@ -96,4 +104,13 @@ int main(int argc, char **argv)
     return 0;
 }
 
+static const char * get_cmd_string(const char * str)
+{
+    for (size_t i = 0; i < CMD_INDX_NUM; i++) {
+        bool res = string_compare(cmd_strings[i], str);
+        if (res)
+            return cmd_strings[i];
+    }
 
+    return NULL;
+}
