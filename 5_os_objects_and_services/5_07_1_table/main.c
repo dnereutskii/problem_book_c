@@ -26,6 +26,8 @@
 /* USER defines */
 #define RDWR_BLOCK_SIZE     4096
 #define MIN_ARGS_CNT        3
+#define ARGS_CNT_ADD        4
+#define ARGS_CNT_QUARY      4
 #define CNT_SIZE_BYTES      4
 #define STRING_MAX_LEN      59
 #define STRING_RECORD_LEN   (STRING_MAX_LEN + 1)
@@ -47,14 +49,21 @@ enum cmd_indx {
     CMD_INDX_QUARY,
     CMD_INDX_LIST,
 
-    CMD_INDX_NUM
+    CMD_INDX_NUM,
+    CMD_INDX_ERR = -1,
+};
+
+enum err_indx {
+    ERR_INDX_WRONG_CMD,
+    ERR_INDX_NO_ID,
+    ERR_INDX_TOO_FEW_ARGS,
 };
 
 struct args_info {
     int fd;
     const char *file_name;
     const char *cmd;
-    int cmd_id;
+    enum cmd_indx cmd_id;
     const char *item;
 };
 
@@ -64,27 +73,38 @@ const char * cmd_strings[] = {
     [CMD_INDX_LIST] = "list",
 };
 
-static void fill_args_info(struct args_info ai);
+const char * err_strings[] = {
+    [ERR_INDX_WRONG_CMD] = "wrong command",
+    [ERR_INDX_NO_ID] = "no id",
+    [ERR_INDX_TOO_FEW_ARGS] = "too few arguments",
+    
+};
+
+//static void fill_args_info(struct args_info ai);
 static const char * get_cmd_string(const char * str);
+static enum cmd_indx get_cmd_indx(const char * str);
 
 int main(int argc, char **argv)
 {
+    /* check min args count */
     if (argc < MIN_ARGS_CNT) {
-        fprintf(stderr, "too few arguments\n");
+        fprintf(stderr, "%s\n", err_strings[ERR_INDX_TOO_FEW_ARGS]);
         return 1;
     }
-
-    const char * cmd = get_cmd_string(argv[ARGS_INDX_CMD]);
-    if (cmd)
-        printf("%s\n", cmd);
-    else
-        printf("no that cmd\n");
     
     struct args_info ainfo;
-    
+
+    /* check command */
+    ainfo.cmd_id = get_cmd_indx(argv[ARGS_INDX_CMD]);
+    if (ainfo.cmd_id == CMD_INDX_ERR) {
+        fprintf(stderr, "%s: %s\n",
+                argv[ARGS_INDX_CMD],
+                err_strings[ERR_INDX_WRONG_CMD]);
+        return 1;
+    }
     /* open file (text or binary)*/
     ainfo.file_name = argv[ARGS_INDX_FILE_NAME];
-    ainfo.fd = open(ainfo.file_name, O_RDWR|O_CREAT);
+    ainfo.fd = open(ainfo.file_name, O_RDWR|O_CREAT, 0666);
     if (ainfo.fd == SYSCALL_OPEN_ERR) {
         perror(ainfo.file_name);
         return 1;
@@ -113,4 +133,15 @@ static const char * get_cmd_string(const char * str)
     }
 
     return NULL;
+}
+
+static enum cmd_indx get_cmd_indx(const char * str)
+{
+    for (size_t i = 0; i < CMD_INDX_NUM; i++) {
+        bool res = string_compare(cmd_strings[i], str);
+        if (res)
+            return (enum cmd_indx)i;
+    }
+
+    return CMD_INDX_ERR;
 }
