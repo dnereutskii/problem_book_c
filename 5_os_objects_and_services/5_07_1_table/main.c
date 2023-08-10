@@ -25,9 +25,9 @@
 
 /* USER defines */
 #define RDWR_BLOCK_SIZE     4096
-#define MIN_ARGS_CNT        3
-#define ARGS_CNT_ADD        4
-#define ARGS_CNT_QUARY      4
+#define ARGS_MIN_CNT        3
+#define ARGS_CNT_ADD_QUARY  4
+#define ARGS_CNT_LIST       3
 #define CNT_SIZE_BYTES      4
 #define STRING_MAX_LEN      59
 #define STRING_RECORD_LEN   (STRING_MAX_LEN + 1)
@@ -57,6 +57,7 @@ enum err_indx {
     ERR_INDX_WRONG_CMD,
     ERR_INDX_NO_ID,
     ERR_INDX_TOO_FEW_ARGS,
+    ERR_INDX_TOO_FEW_ARGS_FOR
 };
 
 struct args_info {
@@ -77,7 +78,7 @@ const char * err_strings[] = {
     [ERR_INDX_WRONG_CMD] = "wrong command",
     [ERR_INDX_NO_ID] = "no id",
     [ERR_INDX_TOO_FEW_ARGS] = "too few arguments",
-    
+    [ERR_INDX_TOO_FEW_ARGS_FOR] = "too few arguments for the command"
 };
 
 //static void fill_args_info(struct args_info ai);
@@ -87,7 +88,7 @@ static enum cmd_indx get_cmd_indx(const char * str);
 int main(int argc, char **argv)
 {
     /* check min args count */
-    if (argc < MIN_ARGS_CNT) {
+    if (argc < ARGS_MIN_CNT) {
         fprintf(stderr, "%s\n", err_strings[ERR_INDX_TOO_FEW_ARGS]);
         return 1;
     }
@@ -97,11 +98,25 @@ int main(int argc, char **argv)
     /* check command */
     ainfo.cmd_id = get_cmd_indx(argv[ARGS_INDX_CMD]);
     if (ainfo.cmd_id == CMD_INDX_ERR) {
-        fprintf(stderr, "%s: %s\n",
-                argv[ARGS_INDX_CMD],
+        fprintf(stderr, "%s: %s\n", argv[ARGS_INDX_CMD],
                 err_strings[ERR_INDX_WRONG_CMD]);
         return 1;
     }
+
+    /* check args count depending on the command */
+    switch (ainfo.cmd_id) {
+    case CMD_INDX_ADD:
+    case CMD_INDX_QUARY:
+        if (argc < ARGS_CNT_ADD_QUARY) {
+            fprintf(stderr, "%s: %s\n", argv[ARGS_INDX_CMD],
+                    err_strings[ERR_INDX_TOO_FEW_ARGS_FOR]);
+            return 1;
+        }
+        break;
+    default:
+        break;
+    }
+    
     /* open file (text or binary)*/
     ainfo.file_name = argv[ARGS_INDX_FILE_NAME];
     ainfo.fd = open(ainfo.file_name, O_RDWR|O_CREAT, 0666);
@@ -110,6 +125,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    
     /* get key */
     /*    if (sscanf(argv[ARGS_INDX_KEY], "%u", &ainfo.key) != 1) {
         fprintf(stderr, "error handling %s\n", argv[ARGS_INDX_KEY]);
