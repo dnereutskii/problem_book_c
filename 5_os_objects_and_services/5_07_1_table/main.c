@@ -11,6 +11,8 @@
  *
  */
 
+#define _LARGEFILE64_SOURCE
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -68,6 +70,11 @@ struct args_info {
     const char *item;
 };
 
+struct __attribute__((__packed__)) record {
+    char id[STRING_RECORD_LEN];
+    unsigned cnt;
+}
+
 const char * cmd_strings[] = {
     [CMD_INDX_ADD] = "add",
     [CMD_INDX_QUARY] = "quary",
@@ -84,6 +91,14 @@ const char * err_strings[] = {
 //static void fill_args_info(struct args_info ai);
 static const char * get_cmd_string(const char * str);
 static enum cmd_indx get_cmd_indx(const char * str);
+
+/*
+ * Searches a record pointed by id.
+ * Return position id in designed file by fd.
+ * Positive position means the record exist.
+ * -1 means the record is upsent.
+ */
+static off_t search_record(int fd, const char *id); 
 
 int main(int argc, char **argv)
 {
