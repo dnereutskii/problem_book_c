@@ -94,11 +94,40 @@ static enum cmd_indx get_cmd_indx(const char * str);
 
 /*
  * Searches a record pointed by id.
- * Return position id in designed file by fd.
- * Positive position means the record exist.
- * -1 means the record is upsent.
+ *
+ * @return Position id in designed file by fd.
+ *         Positive position means the record exist.
+ *         -1 means the record is upsent.
  */
-static off_t search_record(int fd, const char *id); 
+static off_t search_record(int fd, const char *id);
+
+/*
+ * Write struct record to the file.
+ *
+ * @return Position writed struct record. 
+ */
+static off_t write_record(int fd, off_t pos, const struct record *req);
+
+/*
+ * Read record from desined position. 
+ *
+ * @return Position next record.
+ */
+static off_t read_record(int fd, off_t pos, struct record *req);
+
+/*
+ * Writes bytes to the file from the position.
+ *
+ * @return Position writed bytes.
+ */
+static off_t write_buff(int fd, off_t pos, const char *buff, size_t buff_size);
+
+/*
+ * Read bytes from the file starting the position.
+ *
+ * @return Position next after readed buff_size.
+ */
+static off_t read_buff(int fd, off_t pos, char *buff, size_t buff_size);
 
 int main(int argc, char **argv)
 {
