@@ -24,6 +24,7 @@
 #define SYSCALL_READ_EOF    (0)
 #define SYSCALL_READ_ERR    (-1)
 #define SYSCALL_WRITE_ERR   (-1)
+#define SYSCALL_LSEEK_ERR   (-1)
 
 /* USER defines */
 #define RDWR_BLOCK_SIZE     4096
@@ -62,9 +63,13 @@ enum err_indx {
     ERR_INDX_TOO_FEW_ARGS_FOR
 };
 
-struct args_info {
+struct file_info {
     int fd;
     const char *file_name;
+}
+
+struct args_info {
+    struct file_info fi;
     const char *cmd;
     enum cmd_indx cmd_id;
     const char *item;
@@ -118,7 +123,7 @@ static off_t read_record(int fd, off_t pos, struct record *req);
 /*
  * Writes bytes to the file from the position.
  *
- * @return Position writed bytes.
+ * @return Position next after writed bytes.
  */
 static off_t write_buff(int fd, off_t pos, const char *buff, size_t buff_size);
 
@@ -204,4 +209,23 @@ static enum cmd_indx get_cmd_indx(const char * str)
     }
 
     return CMD_INDX_ERR;
+}
+
+static off_t write_buff(struct file_info *fi, off_t pos, const char *buff,
+                        size_t buff_size)
+{
+    size_t wr = 0;
+    pos = lseek(fd, pos, SEEK_SET); /* set wr pos */
+    if (pos == SYSCALL_LSEEK_ERR) {
+        perror(fi->file_name);
+        return pos;
+    }
+    while (wr != buff_size) {
+        int res = write(fi->fd, &buf[wr], buff_size - wr);
+        if (res == SYSCALL_WRITE_ERR) {
+            perror(fi->file_name);
+            return res;
+        }
+        wr += res;
+    }
 }
