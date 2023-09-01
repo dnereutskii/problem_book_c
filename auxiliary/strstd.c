@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "strstd.h"
 
-bool string_compare(const char *str1, const char *str2)
+bool strstd_compare(const char *str1, const char *str2)
 {
     bool res = true;
 
@@ -19,7 +19,7 @@ bool string_compare(const char *str1, const char *str2)
     return res;
 }
 
-size_t string_length(const char *str)
+size_t strstd_length(const char *str)
 {
     size_t cnt = 0;
 
@@ -31,7 +31,7 @@ size_t string_length(const char *str)
     return cnt;
 }
 
-char * string_sub_search(const char *str, const char *sub)
+char * strstd_sub_search(const char *str, const char *sub)
 {
     size_t cnt_cmp = 0;
     size_t sub_len = string_length(sub);
@@ -60,4 +60,19 @@ char * string_sub_search(const char *str, const char *sub)
         sub_ret = NULL;
     
     return (char *)sub_ret;
+}
+
+size_t strstd_copy(char *dest, size_t dest_size, char *src)
+{
+    size_t cnt_copied = 0;
+    
+    while ((*src) && (cnt_copied != dest_size)) {
+        *dest = *src;
+        dest++;
+        src++;
+        cnt_copied++;
+    }
+    *dest = '\0';
+    
+    return (cnt_copied - 1);
 }
