@@ -1,5 +1,5 @@
 /*
- * Task 5.07
+ * Task 5.07.1 (2.55)
  * 
  * 
  * 
@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "strstd.h"
+#include "fstd.h"
 
 /* SYSCALLS defines */
 #define SYSCALL_OPEN_ERR    (-1)
@@ -37,7 +38,7 @@
 #define RECORD_LEN          (STRING_RECORD_LEN + CNT_SIZE_BYTES)
 #define BITS_IN_BYTE        8
 
-
+/* enumerations ------------------------------------------------------------- */
 enum args_indx {
     ARGS_INDX_PROG_NAME,
     ARGS_INDX_FILE_NAME,
@@ -60,12 +61,24 @@ enum err_indx {
     ERR_INDX_WRONG_CMD,
     ERR_INDX_NO_ID,
     ERR_INDX_TOO_FEW_ARGS,
-    ERR_INDX_TOO_FEW_ARGS_FOR
+    ERR_INDX_TOO_FEW_ARGS_FOR,
+    ERR_INDX_TOO_LONG_ID,
 };
 
+enum status {
+    STATUS_OK,
+    STATUS_ERROR,
+    STATUS_RECORD_UPSENT,
+    STATUS_WRONG_POSITION,
+    STATUS_LSEEK_ERROR,
+    STATUS_READ_ERROR,
+    STATUS_WRITE_ERROR,
+};
+
+/* structures --------------------------------------------------------------- */
 struct file_info {
-    int fd;
-    const char *file_name;
+n    int fd;
+    const char *filename;
 }
 
 struct args_info {
@@ -80,19 +93,22 @@ struct __attribute__((__packed__)) record {
     unsigned cnt;
 }
 
-const char * cmd_strings[] = {
+/* local constants ---------------------------------------------------------- */
+static const char * cmd_strings[] = {
     [CMD_INDX_ADD] = "add",
     [CMD_INDX_QUARY] = "quary",
     [CMD_INDX_LIST] = "list",
 };
 
-const char * err_strings[] = {
+static const char * err_strings[] = {
     [ERR_INDX_WRONG_CMD] = "wrong command",
     [ERR_INDX_NO_ID] = "no id",
     [ERR_INDX_TOO_FEW_ARGS] = "too few arguments",
-    [ERR_INDX_TOO_FEW_ARGS_FOR] = "too few arguments for the command"
+    [ERR_INDX_TOO_FEW_ARGS_FOR] = "too few arguments for the command",
+    [ERR_INDX_TOO_LONG_ID] = "too long id",
 };
 
+/* local function declarations ---------------------------------------------- */
 //static void fill_args_info(struct args_info ai);
 static const char * get_cmd_string(const char * str);
 static enum cmd_indx get_cmd_indx(const char * str);
@@ -101,38 +117,33 @@ static enum cmd_indx get_cmd_indx(const char * str);
  * Searches a record pointed by id.
  *
  * @return Position id in designed file by fd.
- *         Positive position means the record exist.
- *         -1 means the record is upsent.
+ *         Non-negative position means the record exist.
+ *         (-1) means the record is upsent.
  */
-static off_t search_record(int fd, const char *id);
+static off_t search_record(struct file_info *fi, const char *id);
 
 /*
  * Write struct record to the file.
  *
  * @return Position writed struct record. 
  */
-static off_t write_record(int fd, off_t pos, const struct record *req);
+static enum status write_record(struct file_info *fi, const struct record *rec,
+                                off_t rec_pos);
 
 /*
  * Read record from desined position. 
  *
  * @return Position next record.
  */
-static off_t read_record(int fd, off_t pos, struct record *req);
+static enum status read_record(struct file_info *fi, struct record *rec,
+                               off_t rec_pos);
 
 /*
- * Writes bytes to the file from the position.
+ * Create record in the end of file.
  *
- * @return Position next after writed bytes.
+ * @return Position created record.
  */
-static off_t write_buff(int fd, off_t pos, const char *buff, size_t buff_size);
-
-/*
- * Read bytes from the file starting the position.
- *
- * @return Position next after readed buff_size.
- */
-static off_t read_buff(int fd, off_t pos, char *buff, size_t buff_size);
+static off_t create_record(struct file_info *fi, const char *id);
 
 int main(int argc, char **argv)
 {
@@ -211,21 +222,109 @@ static enum cmd_indx get_cmd_indx(const char * str)
     return CMD_INDX_ERR;
 }
 
-static off_t write_buff(struct file_info *fi, off_t pos, const char *buff,
-                        size_t buff_size)
+static enum status read_record(struct file_info *fi, struct record *rec,
+                               off_t rec_pos)
 {
-    size_t wr = 0;
-    pos = lseek(fd, pos, SEEK_SET); /* set wr pos */
-    if (pos == SYSCALL_LSEEK_ERR) {
-        perror(fi->file_name);
-        return pos;
+    int remainder = rec_pos % sizeof(struct record);
+    if (remainder != 0)
+        return STATUS_WRONG_POSITION; 
+    off_t res_pos = lseek(fi->fd, rec_pos, SEEK_SET);
+    if (res_pos != rec_pos) {
+        perror(fi->filename);
+        return STATUS_LSEEK_ERROR;
     }
-    while (wr != buff_size) {
-        int res = write(fi->fd, &buf[wr], buff_size - wr);
-        if (res == SYSCALL_WRITE_ERR) {
-            perror(fi->file_name);
-            return res;
-        }
-        wr += res;
+    int res_rd = fstd_file_read(fi->fd, fi->filename,
+                               (char *)rec, sizeof(struct record));
+    if (res_rd != sizeof(struct record)
+        return STATUS_READ_ERROR;
+
+    return STUTUS_OK;
+}
+
+static enum status write_record(struct file_info *fi, const struct record *rec,
+                                off_t rec_pos)
+{
+    int remainder = rec_pos % sizeof(struct record);
+    if (remainder != 0)
+        return STATUS_WRONG_POSITION; 
+    off_t res_pos = lseek(fi->fd, rec_pos, SEEK_SET);
+    if (res_pos != rec_pos) {
+        perror(fi->filename);
+        return STATUS_LSEEK_ERROR;
     }
+    int res_wr = fstd_file_write(fi->fd, fi->filename,
+                                (const char *)rec, sizeof(struct record));
+    if (res_wr != sizeof(struct record)
+        return STATUS_WRITE_ERROR;
+    return STATUS_OK;
+}
+
+static off_t search_record(struct file_info *fi, const char *id)
+{
+    if (string_length(id) > STRING_MAX_LEN) {
+        fprintf(stderr, "%s: %s\n", err_strings[ERR_INDX_TOO_LONG_ID], id);
+        return (-1);
+    }
+    off_t file_size = lseek(fi->fd, 0, SEEK_END);
+    if (file_size == SYSCALL_LSEEK_ERR) {
+        perror(fi->filename);
+        return (-1);
+    }
+    struct record rec;
+    off_t pos = 0;
+    while((pos = read_record(fi, &rec, pos)) != file_size) {
+        if (pos < 0)
+            return pos;
+        if (string_compare(id, rec.id))
+            return (pos - sizeof(struct record));
+    }
+    return (-1);
+}
+
+static off_t create_record(struct file_info *fi, const char *id)
+{
+    if (string_length(id) > STRING_MAX_LEN) {
+        fprintf(stderr, "%s: %s\n", err_strings[ERR_INDX_TOO_LONG_ID], id);
+        return (-1);
+    }
+
+    struct record rec;
+    strstd_copy(rec.id, STRING_RECORD_LEN, id);
+    rec.cnt = 1;
+
+    off_t file_size = lseek(fi->fd, 0, SEEK_END);
+    if (file_size == SYSCALL_LSEEK_ERR) {
+        perror(fi->filename);
+        return (-1);
+    }
+    off_t res_wr = write_record(fi, &rec, file_size);
+
+    return res_wr;
+}
+
+static void cmd_add(struct file_info *fi, const char *id)
+{
+    off_t pos = search_record(fi, id);
+    if (pos != -1) {
+        increase_record(fi, pos);
+    } else {
+        create_record(fi, id);
+    }
+}
+
+static void cmd_quary(struct file_info *fi, const char *id)
+{
+    off_t pos = search_record(fi, id);
+    if (pos != -1) {
+        struct record rec;
+        read_record(fi, &rec, pos);
+        printf("%u\n", rec.cnt);
+    } else {
+        printf("0\n");
+    }
+}
+
+static void cmd_list(struct file_info *fi, const char *id)
+{
+
 }
