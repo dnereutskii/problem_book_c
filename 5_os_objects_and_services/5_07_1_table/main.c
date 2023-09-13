@@ -230,8 +230,7 @@ static enum status read_record(struct file_info *fi, struct record *rec,
     int remainder = rec_pos % sizeof(struct record);
     if (remainder != 0)
         return STATUS_WRONG_POSITION; 
-    off_t res_pos = lseek(fi->fd, rec_pos, SEEK_SET);
-    if (res_pos != rec_pos) {
+    if (lseek(fi->fd, rec_pos, SEEK_SET) == SYSCALL_LSEEK_ERR) {
         perror(fi->filename);
         return STATUS_LSEEK_ERROR;
     }
@@ -249,8 +248,7 @@ static enum status write_record(struct file_info *fi, const struct record *rec,
     int remainder = rec_pos % sizeof(struct record);
     if (remainder != 0)
         return STATUS_WRONG_POSITION; 
-    off_t res_pos = lseek(fi->fd, rec_pos, SEEK_SET);
-    if (res_pos != rec_pos) {
+    if (lseek(fi->fd, rec_pos, SEEK_SET) == SYSCALL_LSEEK_ERR) {
         perror(fi->filename);
         return STATUS_LSEEK_ERROR;
     }
@@ -273,8 +271,10 @@ static enum status search_record(struct file_info *fi, const char *id,
         perror(fi->filename);
         return STATUS_ERR_LSEEK;
     }
-    lseek(fi->fd, 0, SEEK_SET); /* from start */
-    if () {} /* TODO: lseek error */
+    if (lseek(fi->fd, 0, SEEK_SET) == SYSCALL_LSEEK_ERR) {/* from start */
+        perror(fi->filename);
+        return STATUS_ERR_LSEEK;
+    } 
     struct record rec;
     for (size_t i = 0; i < file_size; i += sizeof(struct record)) {
         enum status rd_status = read_record(fi, &rec, i);
