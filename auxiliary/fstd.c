@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <assert.h>
+#include <errno.h>
 #include "fstd.h"
 
 void fstd_fill_array(unsigned char *array, size_t len, unsigned char ch)
@@ -13,10 +15,15 @@ void fstd_fill_array(unsigned char *array, size_t len, unsigned char ch)
 int fstd_file_write(int fd, const char *filename,
                     const char *buff, size_t buff_size)
 {
+    assert(buff != NULL);
+    
     int written = 0;
     while (written != buff_size) {
         int res = write(fd, &buf[written], buff_size - written);
         if (res < 0) {
+            if (errno == EINTR || /**/
+                errno == EAGAIN)  /**/
+                continue;
             perror(filename);
             return res;
         }
@@ -27,6 +34,8 @@ int fstd_file_write(int fd, const char *filename,
 
 int fstd_file_read(int fd, const char *filename, char *buff, size_t buff_size)
 {
+    assert(buff != NULL);
+    
     int read = 0;
     while (read != buff_size) {
         int res = read(fd, &buf[read], buff_size - read);
