@@ -6,7 +6,7 @@ CFLAGS = -Wall -g -O0 -pedantic
 CFLAGS += -I../../auxiliary/
 
 SRCMODULES = ../../auxiliary/strstd.c
-SRCMODULES = ../../auxiliary/fstd.h
+SRCMODULES += ../../auxiliary/fstd.c
 OBJMODULES = $(SRCMODULES:.c=.o)
 
 # mod1.o: mod1.c mod1.h
