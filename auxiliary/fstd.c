@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <assert.h>
 #include <errno.h>
 #include "fstd.h"
@@ -19,7 +20,7 @@ int fstd_file_write(int fd, const char *filename,
     
     int written = 0;
     while (written != buff_size) {
-        int res = write(fd, &buf[written], buff_size - written);
+        int res = write(fd, &buff[written], buff_size - written);
         if (res < 0) {
             if (errno == EINTR || /**/
                 errno == EAGAIN)  /**/
@@ -36,14 +37,14 @@ int fstd_file_read(int fd, const char *filename, char *buff, size_t buff_size)
 {
     assert(buff != NULL);
     
-    int read = 0;
-    while (read != buff_size) {
-        int res = read(fd, &buf[read], buff_size - read);
+    int rd = 0;
+    while (rd != buff_size) {
+        int res = read(fd, &buff[rd], buff_size - rd);
         if (res < 0) {
             perror(filename);
             return res;
         }
-        read += res;
+        rd += res;
     }
-    return read;
+    return rd;
 }

@@ -34,7 +34,7 @@ size_t strstd_length(const char *str)
 char * strstd_sub_search(const char *str, const char *sub)
 {
     size_t cnt_cmp = 0;
-    size_t sub_len = string_length(sub);
+    size_t sub_len = strstd_length(sub);
     const char *sub_cur = sub;
     const char *sub_ret = NULL;
 
@@ -62,7 +62,7 @@ char * strstd_sub_search(const char *str, const char *sub)
     return (char *)sub_ret;
 }
 
-size_t strstd_copy(char *dest, size_t dest_size, char *src)
+size_t strstd_copy(char *dest, size_t dest_size, const char *src)
 {
     size_t cnt_copied = 0;
     

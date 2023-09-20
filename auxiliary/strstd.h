@@ -13,7 +13,7 @@
  * @return true  Strings are equel.
  * @return false Strings are not equel.
  */
-bool string_compare(const char *str1, const char *str2);
+bool strstd_compare(const char *str1, const char *str2);
 
 /**
  * @brief 
@@ -41,6 +41,6 @@ char * strstd_sub_search(const char *str, const char *sub);
  *
  * @return Count of copied chars without terminated zero byte.
  */
-size_t strstd_copy(char *dest, size_t dest_size, char *src);
+size_t strstd_copy(char *dest, size_t dest_size, const char *src);
 
 #endif /* STRSTD_H */
