@@ -293,7 +293,6 @@ static enum status search_record(const struct file_info *fi, const char *id,
     assert(fi != NULL);
     assert(rec_pos != NULL);
 
-    rec_pos = NULL;
     enum status res = check_id_len(id);
     if (res != STATUS_OK)
         return res;
@@ -332,7 +331,7 @@ static enum status create_record(const struct file_info *fi, const char *id)
     if (res != STATUS_OK)
         return res;
     
-    struct record rec;
+    struct record rec = {0};
     strstd_copy(rec.id, STRING_RECORD_LEN, id);
     rec.cnt = 1;
 
@@ -395,8 +394,9 @@ static enum status get_record_cnt(const struct file_info *fi, off_t rec_pos,
         return STATUS_ERR_LSEEK;
     }
     
-    int res = fstd_file_read(fi->fd, fi->filename, (char *)cnt, sizeof(cnt));
-    if (res != sizeof(cnt))
+    int res = fstd_file_read(fi->fd, fi->filename, (char *)cnt,
+                             sizeof(unsigned));
+    if (res != sizeof(unsigned))
         return STATUS_ERR_READ;
 
     return STATUS_OK;
