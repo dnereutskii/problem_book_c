@@ -13,6 +13,7 @@
 | 5     | 4      |           | lines counter    |        |
 | 5     | 5      |           | fill bytes       |        |
 | 5     | 6      |           | xor encryption   |        |
+| 5     | 7      | 1         | table            | 2.55   |
 
 ## Источники
 
