@@ -29,9 +29,7 @@
 
 /* USER defines */
 #define RDWR_BLOCK_SIZE     4096
-#define ARGS_MIN_CNT        3
-#define ARGS_CNT_ADD_QUARY  4
-#define ARGS_CNT_LIST       3
+#define ARGS_MIN_CNT        4
 #define CNT_SIZE_BYTES      4
 #define STRING_MAX_LEN      59
 #define STRING_RECORD_LEN   (STRING_MAX_LEN + 1)
@@ -41,9 +39,9 @@
 /* enumerations ------------------------------------------------------------- */
 enum args_indx {
     ARGS_INDX_PROG_NAME,
-    ARGS_INDX_FILE_NAME,
-    ARGS_INDX_CMD,
-    ARGS_INDX_ID,
+    ARGS_INDX_TABLE_1_NAME,
+    ARGS_INDX_TABLE_2_NAME,
+    ARGS_INDX_TABLE_PIVOT_NAME,
 
     ARGS_INDX_NUM,
 };
@@ -164,58 +162,42 @@ static void cmd_list(const struct file_info *fi);
 int main(int argc, char **argv)
 {
     /* check min args count */
-    if (argc < ARGS_MIN_CNT) {
+    if (argc < ARGS_INDX_NUM) {
         fprintf(stderr, "%s\n", err_strings[ERR_INDX_TOO_FEW_ARGS]);
         return 1;
     }
     
-    struct args_info ainfo;
+    struct file_info table_1;
+    struct file_info table_2;
+    struct file_info table_pivot;
     
-    /* check command */
-    ainfo.cmd_id = get_cmd_indx(argv[ARGS_INDX_CMD]);
-    if (ainfo.cmd_id == CMD_INDX_ERR) {
-        fprintf(stderr, "%s: %s\n", argv[ARGS_INDX_CMD],
-                err_strings[ERR_INDX_WRONG_CMD]);
+    /* open file (table 1)*/
+    table_1.filename = argv[ARGS_INDX_TABLE_1_NAME];
+    table_1.fd = open(table_1.filename, O_READ);
+    if (table_1.fd == SYSCALL_OPEN_ERR) {
+        perror(table_1.filename);
         return 1;
     }
 
-    /* check args count depending on the command */
-    switch (ainfo.cmd_id) {
-    case CMD_INDX_ADD:
-    case CMD_INDX_QUARY:
-        if (argc < ARGS_CNT_ADD_QUARY) {
-            fprintf(stderr, "%s: %s\n", argv[ARGS_INDX_CMD],
-                    err_strings[ERR_INDX_TOO_FEW_ARGS_FOR]);
-            return 1;
-        }
-        break;
-    default:
-        break;
-    }
-    
-    /* open file (text or binary)*/
-    ainfo.fi.filename = argv[ARGS_INDX_FILE_NAME];
-    ainfo.fi.fd = open(ainfo.fi.filename, O_RDWR|O_CREAT, 0666);
-    if (ainfo.fi.fd == SYSCALL_OPEN_ERR) {
-        perror(ainfo.fi.filename);
+    /* open file (table 2)*/
+    table_2.filename = argv[ARGS_INDX_TABLE_2_NAME];
+    table_2.fd = open(table_2.filename, O_READ);
+    if (table_2.fd == SYSCALL_OPEN_ERR) {
+        perror(table_2.filename);
         return 1;
     }
 
-    switch (ainfo.cmd_id) {
-    case CMD_INDX_ADD:
-        cmd_add(&ainfo.fi,  argv[ARGS_INDX_ID]);
-        break;
-    case CMD_INDX_QUARY:
-        cmd_quary(&ainfo.fi,  argv[ARGS_INDX_ID]);
-        break;
-    case CMD_INDX_LIST:
-        cmd_list(&ainfo.fi);
-        break;
-    default:
-        break;
+    /* open file (table pivot)*/
+    table_pivot.filename = argv[ARGS_INDX_TABLE_PIVOT_NAME];
+    table_pivot.fd = open(table_pivot.filename, O_RDWR|O_CREAT|O_TRUNC, 0666);
+    if (table_pivot.fd == SYSCALL_OPEN_ERR) {
+        perror(table_pivot.filename);
+        return 1;
     }
-
-    close(ainfo.fi.fd);
+    
+    close(table_1.fd);
+    close(table_2.fd);
+    close(table_pivot.fd);
     
     return 0;
 }
