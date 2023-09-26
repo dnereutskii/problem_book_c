@@ -4,6 +4,8 @@
 #include <errno.h>
 #include "fstd.h"
 
+#define SYSCALL_READ_EOF (0)
+
 void fstd_fill_array(unsigned char *array, size_t len, unsigned char ch)
 {
     while (len) {
@@ -37,14 +39,16 @@ int fstd_file_read(int fd, const char *filename, char *buff, size_t buff_size)
 {
     assert(buff != NULL);
     
-    int rd = 0;
-    while (rd != buff_size) {
-        int res = read(fd, &buff[rd], buff_size - rd);
+    int rc = 0;
+    while (rc != buff_size) {
+        int res = read(fd, &buff[rc], buff_size - rc);
         if (res < 0) {
             perror(filename);
             return res;
         }
-        rd += res;
+        if (res == SYSCALL_READ_EOF)
+            break;
+        rc += res;
     }
-    return rd;
+    return rc;
 }
