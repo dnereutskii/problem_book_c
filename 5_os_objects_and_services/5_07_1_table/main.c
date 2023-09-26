@@ -1,11 +1,11 @@
-
 /*
- * Task 5.07.1 (2.55)
+ * @brief Task 5.07.1 (2.55)
  * 
+ * The program stores records as 64 bytes: 60 bytes is an id (zero terminated
+ * string, 4 bytes is a counter. ADD command adds record to a file, QUARY takes
+ * a record from the file, LIST shows all records (standard output).
  * 
- * 
- * Call string: ./table file_name cmd id
- * 
+ * Call string: ./bd filename command id
  *
  * @author rhetti
  * @date 07.2023
