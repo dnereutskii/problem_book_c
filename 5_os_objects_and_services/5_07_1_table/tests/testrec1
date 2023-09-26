@@ -1,0 +1,22 @@
+#!/bin/bash 
+
+# Calls bd program <cnt> times with <id> indentificator. 
+# Call: testrec1 <id> <cnt>
+
+prg="./bd"
+file="table"
+cmd="add"
+cmd2="list"
+
+id=$1
+cnt=$2
+
+#echo $id $cnt
+cd ../
+
+for (( i=1; i<=$cnt; i++ )) 
+do 
+    $prg $file $cmd $id  
+done
+
+$prg $file $cmd2
