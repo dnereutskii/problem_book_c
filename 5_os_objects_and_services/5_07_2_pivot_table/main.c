@@ -34,7 +34,6 @@
 #define STRING_MAX_LEN      59
 #define STRING_RECORD_LEN   (STRING_MAX_LEN + 1)
 #define RECORD_LEN          (STRING_RECORD_LEN + CNT_SIZE_BYTES)
-#define BITS_IN_BYTE        8
 
 /* enumerations ------------------------------------------------------------- */
 enum args_indx {
@@ -93,12 +92,6 @@ struct __attribute__((__packed__)) record {
 };
 
 /* local constants ---------------------------------------------------------- */
-static const char * cmd_strings[] = {
-    [CMD_INDX_ADD] = "add",
-    [CMD_INDX_QUARY] = "quary",
-    [CMD_INDX_LIST] = "list",
-};
-
 static const char * err_strings[] = {
     [ERR_INDX_WRONG_CMD] = "wrong command",
     [ERR_INDX_NO_ID] = "no id",
@@ -108,9 +101,6 @@ static const char * err_strings[] = {
 };
 
 /* local function declarations ---------------------------------------------- */
-//static void fill_args_info(struct args_info ai);
-/*static const char * get_cmd_string(const char * str);*/
-static enum cmd_indx get_cmd_indx(const char * str);
 
 /**
  * Searches a record pointed by id.
@@ -123,27 +113,12 @@ static enum status search_record(const struct file_info *fi, const char *id,
                                  off_t *rec_pos);
 
 /**
- * Write record to the designed position.
- *
- * @return Operation status. 
- */
-static enum status write_record(const struct file_info *fi, const struct record *rec,
-                                off_t rec_pos);
-
-/**
  * Read record from desined position. 
  *
  * @return Operation status.
  */
 static enum status read_record(const struct file_info *fi, struct record *rec,
                                off_t rec_pos);
-
-/**
- * Create record in the end of file.
- *
- * @return Position created record.
- */
-static enum status create_record(const struct file_info *fi, const char *id);
 
 /**
  * Check indentificator length
@@ -153,11 +128,17 @@ static enum status create_record(const struct file_info *fi, const char *id);
  */
 static enum status check_id_len(const char *id);
 
-static void cmd_add(const struct file_info *fi, const char *id);
-
-static void cmd_quary(const struct file_info *fi, const char *id);
-
-static void cmd_list(const struct file_info *fi);
+/**
+ * Search for equal records in two files and writes to another file. 
+ *
+ * @param t1 Record table 1
+ * @param t2 Record table 2
+ * @param tp Record table pivot
+ * @param sum Summing flag
+ *
+ */
+static void find_equels(const struct file_info *t1, const struct file_info *t2,
+                        const struct file_info *tp, bool sum);
 
 int main(int argc, char **argv)
 {
@@ -173,7 +154,7 @@ int main(int argc, char **argv)
     
     /* open file (table 1)*/
     table_1.filename = argv[ARGS_INDX_TABLE_1_NAME];
-    table_1.fd = open(table_1.filename, O_READ);
+    table_1.fd = open(table_1.filename, O_RDONLY);
     if (table_1.fd == SYSCALL_OPEN_ERR) {
         perror(table_1.filename);
         return 1;
@@ -181,7 +162,7 @@ int main(int argc, char **argv)
 
     /* open file (table 2)*/
     table_2.filename = argv[ARGS_INDX_TABLE_2_NAME];
-    table_2.fd = open(table_2.filename, O_READ);
+    table_2.fd = open(table_2.filename, O_RDONLY);
     if (table_2.fd == SYSCALL_OPEN_ERR) {
         perror(table_2.filename);
         return 1;
@@ -189,41 +170,21 @@ int main(int argc, char **argv)
 
     /* open file (table pivot)*/
     table_pivot.filename = argv[ARGS_INDX_TABLE_PIVOT_NAME];
-    table_pivot.fd = open(table_pivot.filename, O_RDWR|O_CREAT|O_TRUNC, 0666);
+    table_pivot.fd = open(table_pivot.filename, O_RDWR|O_CREAT|O_TRUNC|O_APPEND,
+                          0666);
     if (table_pivot.fd == SYSCALL_OPEN_ERR) {
         perror(table_pivot.filename);
         return 1;
     }
-    
+
+    find_equels(&table_1, &table_2, &table_pivot, true);
+    find_equels(&table_2, &table_pivot, &table_pivot, false);
+
     close(table_1.fd);
     close(table_2.fd);
     close(table_pivot.fd);
     
     return 0;
-}
-
-#if 0 /* not used */
-static const char * get_cmd_string(const char * str)
-{
-    for (size_t i = 0; i < CMD_INDX_NUM; i++) {
-        bool res = strstd_compare(cmd_strings[i], str);
-        if (res)
-            return cmd_strings[i];
-    }
-
-    return NULL;
-}
-#endif
-
-static enum cmd_indx get_cmd_indx(const char * str)
-{
-    for (size_t i = 0; i < CMD_INDX_NUM; i++) {
-        bool res = strstd_compare(cmd_strings[i], str);
-        if (res)
-            return (enum cmd_indx)i;
-    }
-
-    return CMD_INDX_ERR;
 }
 
 static enum status read_record(const struct file_info *fi, struct record *rec,
@@ -242,28 +203,6 @@ static enum status read_record(const struct file_info *fi, struct record *rec,
     if (res_rd != sizeof(struct record))
         return STATUS_ERR_READ;
 
-    return STATUS_OK;
-}
-
-static enum status write_record(const struct file_info *fi,
-                                const struct record *rec, off_t rec_pos)
-{
-    assert(fi != NULL);
-    
-    int remainder = rec_pos % sizeof(struct record);
-    if (remainder != 0)
-        return STATUS_ERR_WRONG_POSITION;
-
-    off_t cur_pos = lseek(fi->fd, rec_pos, SEEK_SET);
-    if (cur_pos == SYSCALL_LSEEK_ERR) {
-        perror(fi->filename);
-        return STATUS_ERR_LSEEK;
-    }
-
-    int res_wr = fstd_file_write(fi->fd, fi->filename,
-                                (const char *)rec, sizeof(struct record));
-    if (res_wr != sizeof(struct record))
-        return STATUS_ERR_WRITE;
     return STATUS_OK;
 }
 
@@ -303,62 +242,6 @@ static enum status search_record(const struct file_info *fi, const char *id,
     return STATUS_RECORD_UPSENT;
 }
 
-static enum status create_record(const struct file_info *fi, const char *id)
-{
-    assert(fi != NULL);
-
-    enum status res = check_id_len(id);
-    if (res != STATUS_OK)
-        return res;
-    
-    struct record rec = {0};
-    strstd_copy(rec.id, STRING_RECORD_LEN, id);
-    rec.cnt = 1;
-
-    off_t file_size = lseek(fi->fd, 0, SEEK_END);
-    if (file_size == SYSCALL_LSEEK_ERR) {
-        perror(fi->filename);
-        return STATUS_ERR_LSEEK;
-    }
-    
-    return write_record(fi, &rec, file_size);
-}
-
-static enum status increase_record_cnt(const struct file_info *fi, off_t rec_pos)
-{
-    assert(fi != NULL);
-
-    unsigned cnt;
-    
-    int remainder = rec_pos % sizeof(struct record);
-    if (remainder != 0)
-        return STATUS_ERR_WRONG_POSITION;
-    
-    off_t cur_pos = lseek(fi->fd, rec_pos + STRING_RECORD_LEN, SEEK_SET);
-    if (cur_pos == SYSCALL_LSEEK_ERR) {
-        perror(fi->filename);
-        return STATUS_ERR_LSEEK;
-    }
-    
-    int res = fstd_file_read(fi->fd, fi->filename, (char *)&cnt, sizeof(cnt));
-    if (res != sizeof(cnt))
-        return STATUS_ERR_READ;
-
-    cnt += 1;
-
-    cur_pos = lseek(fi->fd, -sizeof(cnt), SEEK_CUR);
-    if (cur_pos == SYSCALL_LSEEK_ERR) {
-        perror(fi->filename);
-        return STATUS_ERR_LSEEK;
-    }
-
-    res = fstd_file_write(fi->fd, fi->filename, (const char *)&cnt, sizeof(cnt));
-    if (res != sizeof(cnt))
-        return STATUS_ERR_WRITE;
-
-    return STATUS_OK;
-}
-    
 static enum status get_record_cnt(const struct file_info *fi, off_t rec_pos,
                                   unsigned *cnt)
 {
@@ -391,63 +274,41 @@ static enum status check_id_len(const char *id)
     }
     return STATUS_OK;
 }
- 
-static void cmd_add(const struct file_info *fi, const char *id)
-{
-    off_t pos;
-    enum status res = search_record(fi, id, &pos);
-    switch (res) {
-    case STATUS_OK:
-        increase_record_cnt(fi, pos);
-        break;
-    case STATUS_RECORD_UPSENT:
-        create_record(fi, id);
-        break;
-    default:
-        break;
-    }
-}
 
-static void cmd_quary(const struct file_info *fi, const char *id)
+static void find_equels(const struct file_info *t1, const struct file_info *t2,
+                        const struct file_info *tp, bool sum)
 {
-    off_t rec_pos;
-    unsigned rec_cnt;
-    enum status res = search_record(fi, id, &rec_pos);
-    switch (res) {
-    case STATUS_OK:
-        if (get_record_cnt(fi, rec_pos, &rec_cnt) == STATUS_OK)
-            printf("%u\n", rec_cnt);
-        break;
-    case STATUS_RECORD_UPSENT:
-        printf("0\n");
-        break;
-    default:
-        break;
-    }
-}
+    assert(t1 != NULL);
+    assert(t2 != NULL);
+    assert(tp != NULL);
 
-static void cmd_list(const struct file_info *fi)
-{
-    assert(fi != NULL);
-    
-    off_t file_size = lseek(fi->fd, 0, SEEK_END);
-    if (file_size == SYSCALL_LSEEK_ERR) {
-        perror(fi->filename);
+    off_t file_size_t1 = lseek(t1->fd, 0, SEEK_END);
+    if (file_size_t1 == SYSCALL_LSEEK_ERR) {
+        perror(t1->filename);
+        return;
+    }
+
+    if (lseek(t1->fd, 0, SEEK_SET) == SYSCALL_LSEEK_ERR) {/* from start */
+        perror(t1->filename);
         return;
     }
     
-    off_t cur_pos = lseek(fi->fd, 0, SEEK_SET); /* from start */
-    if (cur_pos == SYSCALL_LSEEK_ERR) {
-        perror(fi->filename);
-        return;
-    }
-    
-    struct record rec;
-    for (size_t i = 0; i < file_size; i += sizeof(struct record)) {
-        int rd_res = read_record(fi, &rec, i);
-        if (rd_res != STATUS_OK)
+    for (size_t i = 0; i < file_size_t1; i += sizeof(struct record)) {
+        struct record rec_t1 = {0};
+        off_t rec_pos;
+        unsigned rec_cnt;
+        if (read_record(t1, &rec_t1, i) != STATUS_OK)
             return;
-        printf("%s %u\n", rec.id, rec.cnt);
+        enum status exist = search_record(t2, rec_t1.id, &rec_pos);
+        if (exist == STATUS_OK) {
+            if (sum) {
+                get_record_cnt(t2, rec_pos, &rec_cnt);
+                rec_t1.cnt += rec_cnt;
+            } else {
+                continue;
+            }
+        }
+        fstd_file_write(tp->fd, tp->filename, (const char *)&rec_t1,
+                        sizeof(struct record));
     }
 }
-
