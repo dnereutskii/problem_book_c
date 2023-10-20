@@ -118,7 +118,7 @@ static void print_node(struct node *n, void *data)
         c = '\n';
     else
         c = ' ';
-    printf("%d%c", n->val, c);
+    printf("%s%c", n->val, c);
 }
 
 

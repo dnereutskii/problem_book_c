@@ -35,6 +35,9 @@ static void find_file(char *dir_name, char *file_name, struct list *l)
     list_add_to_end(l, (val_t)dir_name);
     while((dent = readdir(dir)) != NULL) {
         if (dent->d_type == DT_DIR) {
+            if ((strstd_compare(dent->d_name, ".") == true) ||
+                (strstd_compare(dent->d_name, "..") == true))
+                continue;
             find_file(dent->d_name, file_name, l);
         } else {
             if (strstd_compare(file_name, dent->d_name) == true)
@@ -47,7 +50,8 @@ static void find_file(char *dir_name, char *file_name, struct list *l)
 
 static void print_path(struct list *l, char *file_name)
 {
-    list_go_through(l, &print_node1, (void *)'/');
+    char c = '/';
+    list_go_through(l, &print_node1, (void *)&c);
     printf("%s\n", file_name);
 }
 

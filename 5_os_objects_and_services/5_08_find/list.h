@@ -1,7 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
-typedef int val_t;
+typedef char * val_t;
 
 struct node {
     val_t val;
