@@ -1,5 +1,8 @@
 #include <stdio.h>
+#include <assert.h>
 #include "strstd.h"
+
+#define INT_STR_MAX_LEN (10)
 
 bool strstd_compare(const char *str1, const char *str2)
 {
@@ -76,3 +79,26 @@ size_t strstd_copy(char *dest, size_t dest_size, const char *src)
     
     return (cnt_copied - 1);
 }
+
+int strstd_stoi(const char *str)
+{
+	assert(str != NULL);
+    
+    size_t cnt = 0;
+	int num = 0;
+    int sign = 1;
+
+    if (*str == '-') {
+        sign = -1;
+        str++;
+    }
+	while ((*str) && (cnt != INT_STR_MAX_LEN)) {
+		if (*str > '9' && *str < '0')
+			break;
+		num = num * 10 + (*str - '0');
+		str++;
+	}
+    
+	return num * sign;
+}	
+

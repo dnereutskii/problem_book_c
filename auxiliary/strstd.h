@@ -43,4 +43,13 @@ char * strstd_sub_search(const char *str, const char *sub);
  */
 size_t strstd_copy(char *dest, size_t dest_size, const char *src);
 
+/**
+ * @brief Converts null-terminated string with decimal number to int.
+ *
+ * @param str String pointer.
+ * 
+ * @return Integer number.
+ */
+int strstd_stoi(const char *str);
+
 #endif /* STRSTD_H */

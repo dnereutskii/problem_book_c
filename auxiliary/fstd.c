@@ -15,6 +15,15 @@ void fstd_fill_array(unsigned char *array, size_t len, unsigned char ch)
     }
 }
 
+void fstd_fill_arr_int(int *arr, size_t len, int num)
+{
+    while (len) {
+        *arr = num;
+        arr++;
+        len--;
+    }
+}
+
 int fstd_file_write(int fd, const char *filename,
                     const char *buff, size_t buff_size)
 {
@@ -52,3 +61,4 @@ int fstd_file_read(int fd, const char *filename, char *buff, size_t buff_size)
     }
     return rc;
 }
+
