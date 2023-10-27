@@ -1,64 +1,93 @@
+/*
+ * @author rhetti
+ * @date 09.2023
+ *
+ * Task 5.08
+ * Finds file by opendir, readdir, closedir std functions.
+ *
+ */
 #include <stdio.h>
-#include <assert.h>
-#include <sys/types.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <time.h>
 #include <dirent.h>
-#include "strstd.h"
-#include "list.h"
+#include <string.h>
+#include "stack.h"
 
-static void print_path(struct list *l, char *file_name);
-static void print_node1(struct node *n, void *data);
-static void find_file(char *dir_name, char *file_name, struct list *l);
+#define FILE_NAME argv[1]
+
+static void add_to_path(struct stack *path, const char *name);
+static void rm_from_path(struct stack *path);
+static void find_file(struct stack *path, char *filename);
 
 int main(int argc, char **argv)
 {
-    if (argc < 2) {
+    if (argc < 2)
+    {
         fprintf(stderr, "too few arguments\n");
         return 1;
     }
-    struct list *mylist = list_init();
-    find_file(".", argv[1], mylist);
-    list_free(mylist);
+    char path_str[] = ".";
+    struct stack *path = stack_init(20);
+    stack_push_array(path, path_str, sizeof(path_str));
+    find_file(path, FILE_NAME);
+    stack_destroy(path);
     
     return 0;
 }
 
-static void find_file(char *dir_name, char *file_name, struct list *l)
+static void find_file(struct stack *path, char *filename)
 {
     DIR *dir;
     struct dirent *dent;
-    
-    dir = opendir(dir_name);
+
+    dir = opendir(path->items);
     if (dir == NULL) {
-        perror(dir_name);
+        perror(path->items);
         return;
     }
-    list_add_to_end(l, (val_t)dir_name);
-    while((dent = readdir(dir)) != NULL) {
+    while ((dent = readdir(dir)) != NULL) {
         if (dent->d_type == DT_DIR) {
-            if ((strstd_compare(dent->d_name, ".") == true) ||
-                (strstd_compare(dent->d_name, "..") == true))
+            if ((strcmp(dent->d_name, ".") == 0) ||
+                (strcmp(dent->d_name, "..") == 0))
                 continue;
-            find_file(dent->d_name, file_name, l);
+            add_to_path(path, dent->d_name);
+            if (strcmp(dent->d_name, filename) == 0)
+                printf("%s\n", path->items);
+            find_file(path, filename);
         } else {
-            if (strstd_compare(file_name, dent->d_name) == true)
-                print_path(l, file_name);
+            if (strcmp(dent->d_name, filename) == 0) {
+                add_to_path(path, dent->d_name);
+                printf("%s\n", path->items);
+                rm_from_path(path);
+            }
         }
     }
-    list_delete_last(l);
+    rm_from_path(path);
     closedir(dir);
 }
 
-static void print_path(struct list *l, char *file_name)
+/**
+ * Adds name to path end.
+ *
+ * @param path Directory path.
+ * @param name String.
+ */
+static void add_to_path(struct stack *path, const char *name)
 {
-    char c = '/';
-    list_go_through(l, &print_node1, (void *)&c);
-    printf("%s\n", file_name);
+    stack_pop(path, NULL); /* pop null char */
+    stack_push(path, '/');
+    stack_push_array(path, name, strlen(name));
+    stack_push(path, '\0');
 }
 
-static void print_node1(struct node *n, void *data)
+/**
+ * Removes last name from path end.
+ *
+ * @param path Directory path.
+ */
+static void rm_from_path(struct stack *path)
 {
-    assert(n != NULL);
-
-    printf("%s%c", n->val, *(char *)data);
+    stack_pop_until(path, '/');
+    stack_push(path, '\0');
 }
-
