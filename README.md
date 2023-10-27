@@ -15,6 +15,7 @@
 | 5     | 6      |           | xor encryption   |        |
 | 5     | 7      | 1         | table            | 2.55   |
 | 5     | 7      | 2         | pivot table      | 2.56   |
+| 5     | 8      |           | find file        |        |
 
 ## Источники
 
