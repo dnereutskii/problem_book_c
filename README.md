@@ -17,6 +17,7 @@
 | 5     | 7      | 2         | pivot table      | 2.56   |
 | 5     | 8      |           | find file        |        |
 | 5     | 9      |           | stat             |        |
+| 5     | 10     |           | fork test        |        |
 
 ## Источники
 
