@@ -19,11 +19,9 @@ int main(int argc, char *argv[])
     
     if (pid == 0) { /* child process */   
         //execlp("ls", "ls", "-la", "/var", NULL);
-        if (execvp(argv[1], &argv[1]) == -1) {
-                perror(argv[1]); /* exec returns control -> error */
-                exit(EXIT_FAILURE);
-        }
-        //exit(EXIT_SUCCESS);
+        execvp(argv[1], &argv[1]);
+        perror(argv[1]); /* exec returns control -> error */
+        exit(EXIT_FAILURE);
     }
     /* parent process */
     wait(&status); /* wait for finishing of child process */
