@@ -11,21 +11,26 @@ int main(int argc, char *argv[])
         fprintf(stderr, "too few arguments\n");
         return 1;
     }
+    fflush(stderr);
     pid = fork();
     if (pid == -1) { /* make process error */
         perror("fork failure\n");
         exit(EXIT_FAILURE);
     }
-    
-    if (pid == 0) { /* child process */   
+    /* child process */
+    if (pid == 0) { 
         //execlp("ls", "ls", "-la", "/var", NULL);
         execvp(argv[1], &argv[1]);
         perror(argv[1]); /* exec returns control -> error */
-        exit(EXIT_FAILURE);
+        fflush(stderr);
+        _exit(1);
     }
     /* parent process */
     wait(&status); /* wait for finishing of child process */
-    printf("%d\n", status);
+    if ((status >= 1) && (status <= 64))
+        printf("killed %d\n", status);
+    else
+        printf("exited %d\n", status);
         
     return 0;
 }
