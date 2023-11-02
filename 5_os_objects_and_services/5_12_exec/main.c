@@ -27,10 +27,10 @@ int main(int argc, char *argv[])
     }
     /* parent process */
     wait(&status); /* wait for finishing of child process */
-    if ((status >= 1) && (status <= 64))
-        printf("killed %d\n", status);
+    if (WIFEXITED(status))
+        printf("exited %d\n", WEXITSTATUS(status));
     else
-        printf("exited %d\n", status);
+        printf("killed %d\n", WTERMSIG(status));
         
     return 0;
 }
