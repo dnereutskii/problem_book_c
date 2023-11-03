@@ -1,3 +1,11 @@
+/*
+ * Task 5.12
+ * Fires external program up with arguments.
+ * Run: ./exec1 program <arg1> ...
+ *
+ * @author rhetti
+ * @date 10.2023
+ */
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
