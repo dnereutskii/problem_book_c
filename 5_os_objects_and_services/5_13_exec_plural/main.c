@@ -1,6 +1,7 @@
 /*
- * Task 5.13
- * Fires external programs up with arguments.
+ * Task 5.13 exec plural.
+ * Fires external programs up with arguments and prints its name when 
+ * they finished with zero exit. 
  * Run: ./execplural prg1 <arg1> <arg2> ';;' prg2 <arg1> ';;' prg3 
  *
  * @author rhetti
