@@ -40,6 +40,8 @@ int main(int argc, char *argv[])
     }
     size_t prg_cnt = get_cnt_prgs(argv); /* programs to execute */
     char **sub_argv = argv + 1;
+    pid_t pid;
+    int status;
     /* fire program up */
     for (size_t i = 0; i < prg_cnt; i++) {
         char **del = get_delim(sub_argv);
@@ -50,7 +52,7 @@ int main(int argc, char *argv[])
             *del = NULL;
         }
         fflush(stderr);
-        int pid = fork();
+        pid = fork();
         if (pid == -1) { /* fork process error */
             perror("fork failure\n");
             exit(EXIT_FAILURE);
@@ -70,9 +72,8 @@ int main(int argc, char *argv[])
         }
     }
     /* wait programs */
-    for (size_t i = 0; i < prg_cnt; i++) {
-        int status;
-        pid_t pid = wait(&status); /* wait for finishing of child process */
+    while ((pid = wait(&status)) > 0)
+    {
         struct node *n = list_search(table, &pid_cmp, (void *)&pid);
         if (n == NULL) {
             fprintf(stderr, "search error\n");
@@ -80,9 +81,9 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
         if (WIFEXITED(status) && (WEXITSTATUS(status) == 0)) {
-            printf("[pid %d name %s]\n", pid, n->val.pname);
+            printf("[pid: %d name: %s]\n", pid, n->val.pname);
         }
-    }
+    };
     list_free(table);
     
     return 0;
