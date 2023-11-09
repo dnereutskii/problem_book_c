@@ -24,7 +24,7 @@ const char *args_delimiter = ARGS_DELIMITER;
 
 static char ** get_delim(char *argv[]);
 /* static int get_delim_indx(char *argv[]); */
-static size_t get_cnt_prgs(char *argv[]);
+/* static size_t get_cnt_prgs(char *argv[]); */
 static bool pid_cmp(struct node *n, void *data);
 
 int main(int argc, char *argv[])
@@ -38,18 +38,20 @@ int main(int argc, char *argv[])
         fprintf(stderr, "table allocation error\n");
         exit(EXIT_FAILURE);
     }
-    size_t prg_cnt = get_cnt_prgs(argv); /* programs to execute */
-    char **sub_argv = argv + 1;
     pid_t pid;
     int status;
-    /* fire program up */
-    for (size_t i = 0; i < prg_cnt; i++) {
+    char delimitered = 1; /* delimiter flag */
+    char **sub_argv = argv + 1;
+    /* fire programs up */
+    while ((*sub_argv != NULL) && delimitered) {
         char **del = get_delim(sub_argv);
-        char *del_bck;
+        char *del_bck = NULL;
         val_t pn;
         if (del != NULL) {
             del_bck = *del;
             *del = NULL;
+        } else {
+            delimitered = 0;
         }
         fflush(stderr);
         pid = fork();
@@ -57,16 +59,16 @@ int main(int argc, char *argv[])
             perror("fork failure\n");
             exit(EXIT_FAILURE);
         }
-        if (pid == 0) { /* child process */
+        if (pid == 0) { /* child routine */
             execvp(sub_argv[0], sub_argv);
-            perror(argv[1]); /* exec returns control -> error */
+            perror(sub_argv[0]); /* exec returns control -> error */
             fflush(stderr);
             _exit(1);
         }
         pn.pid = pid;
         pn.pname = sub_argv[0];
         list_add_to_end(table, &pn);
-        if (del != NULL) {
+        if (del_bck != NULL) { /* restore delimiter */
             *del = del_bck;
             sub_argv = del + 1;
         }
@@ -80,9 +82,11 @@ int main(int argc, char *argv[])
             list_free(table);
             exit(EXIT_FAILURE);
         }
-        if (WIFEXITED(status) && (WEXITSTATUS(status) == 0)) {
+        if (WIFEXITED(status) && (WEXITSTATUS(status) == 0))
             printf("[pid: %d name: %s]\n", pid, n->val.pname);
-        }
+        /* if (WIFSIGNALED(status))
+            printf("[pid: %d name: %s signaled: %d]\n",
+                   pid, n->val.pname, WTERMSIG(status)); */
     };
     list_free(table);
     
@@ -110,8 +114,9 @@ static int get_delim_indx(char *argv[])
     else
         return (-1);
 }
-#endif
+#endif /* not used */
 
+#if 0 /* not used */
 static size_t get_cnt_prgs(char *argv[])
 {
     unsigned cnt = 0;
@@ -127,6 +132,7 @@ static size_t get_cnt_prgs(char *argv[])
         cnt++;
     return cnt;
 }
+#endif /* not used */
 
 static bool pid_cmp(struct node *n, void *data)
 {
