@@ -1,6 +1,6 @@
 CC = gcc
 RM = rm
-PROJNAME = shi
+PROJNAME = shell1
 
 CFLAGS = -Wall -g -O0 -pedantic
 CFLAGS += -I.
