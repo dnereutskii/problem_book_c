@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
                 print_words(words);
             } else {
                 printf("%s\n", msg_strings[msg_indx_unquot]);
+                quot = false;
             }
             printf(PROMPT_LINE);
             line_destroy(&ln);
