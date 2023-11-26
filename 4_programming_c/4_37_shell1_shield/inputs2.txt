@@ -1,0 +1,6 @@
+abra   schwabra kadabra
+    abra        schwabra     kadabra
+abra "schwabra kadabra" "foo   bar"
+abra schw"abra ka"dab"ra" foo"   "bar
+abra   schwabra" kadabra
+abraschwabrakadabra
