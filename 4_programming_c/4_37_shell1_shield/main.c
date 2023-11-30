@@ -182,8 +182,7 @@ static void print_word(struct node *word, void *data)
 
 static enum act flags_handler(union flags *fls, char c)
 {
-    if (((c >= 'a') && (c <= 'z')) ||
-        ((c >= 'A') && (c <= 'Z'))) {
+    if (isalpha(c)) {
         if (!fls->bits.wdaccum)
             fls->bits.wdaccum = 1;
         return act_save_char;
