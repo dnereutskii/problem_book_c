@@ -19,23 +19,6 @@
 #define SIZE_FACTOR (2)
 #define PROMPT_LINE "> "
 
-struct array {
-    char *buf;
-    size_t limit;
-    size_t count;
-};
-
-union flags {
-    struct {
-        unsigned char wdaccum   : 1;
-        unsigned char wdsave    : 1;
-        unsigned char lnfin     : 1;
-        unsigned char spcaccum  : 1;
-        unsigned char shield    : 1;
-    } bits;
-    unsigned char all;
-};
-
 enum retval {
     retval_ok = 0,
     retval_err_alloc,
@@ -57,93 +40,108 @@ enum act {
     act_err_open_quot,
 };
 
+enum state {
+    state_out = 0,
+    state_inword1,
+    state_inword2,
+    state_num,
+};
+
+struct fsm {
+    enum state cur_state;
+    void (*state_table[state_num])(int c); 
+};
+
+struct array {
+    char *buf;
+    size_t limit;
+    size_t count;
+};
+
+union flags {
+    struct {
+        unsigned char wdaccum   : 1;
+        unsigned char wdsave    : 1;
+        unsigned char lnfin     : 1;
+        unsigned char spcaccum  : 1;
+        unsigned char shield    : 1;
+    } bits;
+    unsigned char all;
+};
+
+
 static void print_words(struct list *w);
 static void print_word(struct node *w, void *data);
-static enum retval array_init(struct array *arr);
+
+static struct array *array_init(size_t len);
 static enum retval array_save_char(struct array *arr, char ch);
 static void array_destroy(struct array *arr);
 static enum act flags_handler(union flags *fls, char c);
 static enum retval save_word(struct list *words, struct array *word);
 static void free_words(struct list *words);
 static void array_reset(struct array *arr);
+/* state functions */
+static void state_func_out(int c);
+static void state_func_inword1(int c);
+static void state_func_inword2(int c);
 
 const char *msg_strings[] = {
     "unmatched quotes",
     "allocation error",
 };
 
+struct fsm shell1 = {
+    .cur_state = state_out,
+    .state_table = {
+        &state_func_out,
+        &state_func_inword1,
+        &state_func_inword2,
+    }
+};
+
 int main(int argc, char *argv[])
 {
     int c;
-    union flags fls = {0};
-    struct array word;
+    struct array *word;
     struct list *words;
 
     words = list_init();
     if (words == NULL)
         exit(EXIT_FAILURE);
-    if (array_init(&word) != retval_ok) { 
+    word = array_init(INIT_SIZE);
+    if (word == NULL) { 
         list_destroy(words);
         exit(EXIT_FAILURE);
     }
     printf(PROMPT_LINE);
 
     while ((c = getchar()) != EOF) {
-        int res = flags_handler(&fls, c);
-        switch (res) {
-        case act_nothing:
-            continue;
-        case act_save_char:
-            array_save_char(&word, c);
-            break;
-        case act_err_open_quot:
-            printf("Error: %s\n", msg_strings[msg_indx_unquot]);
-            free_words(words);
-            array_reset(&word);
-            fls.all = 0;
-            printf(PROMPT_LINE);
-            break;
-        case act_save_word:
-            save_word(words, &word);
-            array_reset(&word);
-            fls.all = 0;
-            break;
-        case act_save_word_end_line:
-            save_word(words, &word);
-            print_words(words);
-            free_words(words);
-            array_reset(&word);
-            fls.all = 0;
-            printf(PROMPT_LINE);
-            break;
-        case act_end_line:
-            print_words(words);
-            free_words(words);
-            array_reset(&word);
-            fls.all = 0;
-            printf(PROMPT_LINE);
-            break;
-        } 
+        shell1.state_table[shell1.cur_state](c);
     }
     printf("\n");
-    array_destroy(&word);
+    array_destroy(word);
     free_words(words);
     list_destroy(words);
         
     return 0;
 }
 
-
-static enum retval array_init(struct array *arr)
+static struct array *array_init(size_t len)
 {
-    arr->buf = malloc(INIT_SIZE * sizeof(char));
+    struct array *arr = malloc(sizeof(struct array));
+    if (arr == NULL) {
+        perror(msg_strings[msg_indx_err_alloc]);
+        return NULL;
+    }
+    arr->buf = malloc(len * sizeof(char));
     if (arr->buf == NULL) {
-        perror("array_init()");
-        return retval_err_alloc;
+        perror(msg_strings[msg_indx_err_alloc]);
+        free(arr);
+        return NULL;
     }
     arr->count = 0;
     arr->limit = INIT_SIZE;
-    return retval_ok;
+    return arr;
 }
 
 static enum retval array_save_char(struct array *arr, char ch)
@@ -163,10 +161,9 @@ static enum retval array_save_char(struct array *arr, char ch)
 
 static void array_destroy(struct array *arr)
 {
-    free(arr->buf);
-    arr->limit = 0;
-    arr->count = 0;
-    arr->buf = NULL;
+    if (arr->buf != NULL)
+        free(arr->buf);
+    free(arr);
 }
 
 static void print_words(struct list *words)
@@ -251,4 +248,22 @@ static void array_reset(struct array *arr)
 {
     arr->count = 0;
     arr->buf[0] = '\0';
+}
+
+static void state_func_out(int c)
+{
+    if (isalnum(c)) {
+        shell1.cur_state = state_inword1;
+        
+    }
+}
+
+static void state_func_inword1(int c)
+{
+    
+}
+
+static void state_func_inword2(int c)
+{
+    
 }
