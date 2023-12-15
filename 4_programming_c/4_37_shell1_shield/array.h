@@ -6,7 +6,7 @@
 
 /* Defines -------------------------------------------------------------------*/
 #define REALLOC_SIZE_FACTOR 2
-
+#define SIZE_FACTOR 10
 /* Struct declaration --------------------------------------------------------*/
 struct array {
     char *buf;
@@ -20,4 +20,4 @@ retval_t array_save_char(struct array *arr, char ch);
 void array_destroy(struct array *arr);
 void array_reset(struct array *arr);
 
-#ifndef /* ARRARY_H */
+#endif /* ARRAY_H */

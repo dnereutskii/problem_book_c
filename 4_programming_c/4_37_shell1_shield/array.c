@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <strings.h>
+#include <stdlib.h>
 #include "array.h"
 
 /* Function definitions ------------------------------------------------------*/
@@ -21,7 +22,7 @@ struct array *array_init(size_t len)
     return arr;
 }
 
-int array_save_char(struct array *arr, char ch)
+retval_t array_save_char(struct array *arr, char ch)
 {
     if (arr->count >= arr->limit) {
         arr->buf = realloc(arr->buf, arr->limit * SIZE_FACTOR);

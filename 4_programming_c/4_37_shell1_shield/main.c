@@ -19,7 +19,6 @@
 
 /* Defines -------------------------------------------------------------------*/
 #define INIT_SIZE   (20)
-#define SIZE_FACTOR (2)
 #define PROMPT_LINE "> "
 
 /* Enum delarations ----------------------------------------------------------*/
@@ -33,6 +32,7 @@ enum state {
     state_inword1,
     state_inword2,
     state_slash,
+    
     state_num,
 };
 
@@ -47,9 +47,11 @@ struct fsm_out {
 };
 
 struct fsm {
+    struct fsm_in in;
+    struct fsm_out out;
     enum state cur_state;
     enum state prev_state;
-    void (*state_table[state_num])(struct fsm_in *, struct fsm_out *); 
+    void (* const state_table[state_num])(void);
 };
 
 
@@ -58,12 +60,12 @@ static void print_words(struct list *w);
 static void print_word(struct node *w, void *data);
 static retval_t save_word(struct list *words, struct array *word);
 static void free_words(struct list *words);
-static void change_state(enum state cur, enum stete next);
+static void change_state(enum state next);
 /* state functions */
-static void shell1_state_out(struct fsm_in *in, struct fsm_out *out);
-static void shell1_state_inword1(struct fsm_in *in, struct fsm_out *out);
-static void shell1_state_inword2(struct fsm_in *in, struct fsm_out *out);
-static void shell1_state_slash(struct fsm_in *in, struct fsm_out *out)
+static void shell1_state_out(void);
+static void shell1_state_inword1(void);
+static void shell1_state_inword2(void);
+static void shell1_state_slash(void);
 
 /* Local constants -----------------------------------------------------------*/
 static const char *msg_strings[] = {
@@ -71,39 +73,36 @@ static const char *msg_strings[] = {
 };
 
 /* Local variables -----------------------------------------------------------*/
-struct fsm shell1 = {
+static struct fsm shell1 = {
     .cur_state = state_out,
+    .prev_state = state_out,
     .state_table = {
-        &state_func_out,
-        &state_func_inword1,
-        &state_func_inword2,
-        %state_func_slash,
+        &shell1_state_out,
+        &shell1_state_inword1,
+        &shell1_state_inword2,
+        &shell1_state_slash,
     }
 };
 
+/* Function definitions ------------------------------------------------------*/
 int main(int argc, char *argv[])
 {
-    int c;
-    struct array *word;
-    struct list *words;
-
-    words = list_init();
-    if (words == NULL)
+    shell1.out.words = list_init();
+    if (shell1.out.words == NULL)
         exit(EXIT_FAILURE);
-    word = array_init(INIT_SIZE);
-    if (word == NULL) { 
-        list_destroy(words);
+    shell1.out.word = array_init(INIT_SIZE);
+    if (shell1.out.word == NULL) { 
+        list_destroy(shell1.out.words);
         exit(EXIT_FAILURE);
     }
     printf(PROMPT_LINE);
 
-    while ((c = getchar()) != EOF) {
-        shell1.state_table[shell1.cur_state](c);
-    }
+    while ((shell1.in.c = getchar()) != EOF)
+        shell1.state_table[shell1.cur_state]();
     printf("\n");
-    array_destroy(word);
-    free_words(words);
-    list_destroy(words);
+    array_destroy(shell1.out.word);
+    free_words(shell1.out.words);
+    list_destroy(shell1.out.words);
         
     return 0;
 }
@@ -152,54 +151,84 @@ static void free_words(struct list *words)
     words->cnt = 0;
 }
 
-static void change_state(enum state cur, enum stete next)
+static void fsm_reset(void)
 {
-    shell1.prev_state = cur;
+    shell1.cur_state = state_out;
+    shell1.prev_state = state_out;
+}
+
+static void change_state(enum state next)
+{
+    shell1.prev_state = shell1.cur_state;
     shell1.cur_state = next;
 }
 
-static void shell1_state_out(struct fsm_in *in, struct fsm_out *out)
+static void shell1_state_out(void)
 {
-    if (isalnum(in->c)) {
-        change_state(state_out, state_inword1);
-        array_save_char(out->word, in->c);
-    } else if (in->c == '\"') {
-        change_state(state_out, state_inword2);
-    } else if (in->c == '\\') {
-        change_state(state_out, state_slash);
+    if (isalnum(shell1.in.c)) {
+        change_state(state_inword1);
+        array_save_char(shell1.out.word, shell1.in.c);
+    } else if (shell1.in.c == '\"') {
+        change_state(state_inword2);
+    } else if (shell1.in.c == '\\') {
+        change_state(state_slash);
     }
 }
 
-static void shell1_state_inword1(struct fsm_in *in, struct fsm_out *out)
+static void shell1_state_inword1(void)
 {
-    if (isalnum(in->c)) {
-        change_state(state_inword1, state_inword1);
-        array_save_char(out->word, in->c);
-    } else if (in->c == '\"') {
-        change_state(state_inword1, state_inword2);
-    } else if (in->c == '\\') {
-        change_state(state_inword1, state_slash);
-    } else if (isblank(in->c)) {
-        change_state(state_inword1, state_out);
-        save_word(out->words, out->word);
-        array_reset(out->word);
-    } else if (in->c == '\n') {
-        save_word(out->words, out->word);
-        print_words(out->words);
-        ree_wors(out->wors)
-        fsm_reset(shell1);
-        
+    if (isalnum(shell1.in.c)) {
+        array_save_char(shell1.out.word, shell1.in.c);
+    } else if (shell1.in.c == '\"') {
+        change_state(state_inword2);
+    } else if (shell1.in.c == '\\') {
+        change_state(state_slash);
+    } else if (isblank(shell1.in.c)) {
+        change_state(state_out);
+        save_word(shell1.out.words, shell1.out.word);
+        array_reset(shell1.out.word);
+    } else if (shell1.in.c == '\n') {
+        save_word(shell1.out.words, shell1.out.word);
+        print_words(shell1.out.words);
+        free_words(shell1.out.words);
+        array_reset(shell1.out.word);
+        fsm_reset();
+        printf(PROMPT_LINE);
     }
 }
 
-static void shell1_state_inword2(struct fsm_in *in, struct fsm_out *out)
+static void shell1_state_inword2(void)
 {
-    
+    if (isalnum(shell1.in.c) || isblank(shell1.in.c)) {
+        array_save_char(shell1.out.word, shell1.in.c);
+    } else if (shell1.in.c == '\"') {
+        change_state(state_inword1);
+    } else if (shell1.in.c == '\\') {
+        change_state(state_slash);
+    } else if (shell1.in.c == '\n') {
+        printf("Error: %s\n", msg_strings[msg_indx_unquot]);
+        printf(PROMPT_LINE);
+        free_words(shell1.out.words);
+        array_reset(shell1.out.word);
+        fsm_reset();
+    }
 }
 
-static void shell1_state_slash(struct fsm_in *in, struct fsm_out *out)
+static void shell1_state_slash(void)
 {
-
+    if (shell1.in.c == '\n') {
+        if (shell1.out.word->count != 0) {
+            save_word(shell1.out.words, shell1.out.word);
+            print_words(shell1.out.words);
+            free_words(shell1.out.words);
+            array_reset(shell1.out.word);
+        }
+        printf(PROMPT_LINE);
+        fsm_reset();
+    } else {
+        array_save_char(shell1.out.word, shell1.in.c);
+        change_state(shell1.prev_state);
+    }
    
 }
 
